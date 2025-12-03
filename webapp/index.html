@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Запись к мастеру</title>
+  <link rel="stylesheet" href="/webapp/styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Запись к мастеру</h1>
+      <p id="master-info"></p>
+    </header>
+
+    <section>
+      <label>Услуга</label>
+      <select id="service-select"></select>
+    </section>
+
+    <section>
+      <label>Дата</label>
+      <input type="date" id="date-input" />
+    </section>
+
+    <section>
+      <label>Время</label>
+      <div id="slots" class="slots"></div>
+    </section>
+
+    <section>
+      <label>Ваши данные</label>
+      <input id="client-name" placeholder="Имя" />
+      <input id="client-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Телефон" pattern="^\\+7\\s?\\(?(?:\\d{0,3})\\)?\\s?\\d{0,3}(?:-?\\d{0,2}){2}$" />
+    </section>
+
+    <button id="submit-btn" disabled>Записаться</button>
+    <p id="status"></p>
+  </div>
+
+  <script src="/webapp/app.js"></script>
+</body>
+</html>

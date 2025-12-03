@@ -1,0 +1,42 @@
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:#111;color:#eee;margin:0} .container{max-width:900px;margin:0 auto;padding:16px} h1{font-size:22px;margin:0 0 12px} .section{margin-top:16px;padding:12px;background:#1a1a1a;border-radius:10px} .card{padding:10px;border:1px solid #333;border-radius:8px;margin:8px 0;background:#151515} .row{display:flex;justify-content:space-between;gap:8px} .muted{color:#aaa;font-size:12px}
+
+.modal{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000}
+.hidden{display:none}
+.modal-content{background:#1f1f1f;color:#fff;border-radius:12px;width:92%;max-width:560px;box-shadow:0 10px 30px rgba(0,0,0,0.4);padding:16px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.icon-btn{background:transparent;border:none;color:#bbb;font-size:22px;cursor:pointer}
+.calendar{border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:12px}
+.calendar-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.calendar-legend{display:flex;gap:12px;align-items:center;color:#bbb;margin:6px 0}
+.legend-item{display:flex;gap:6px;align-items:center;font-size:12px}
+.legend-dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid #3a3a3a}
+.legend-dot.working{background:#2a2a2a}
+.legend-dot.off{background:#1a1a1a}
+.legend-dot.today{background:#5a82ff}
+
+/* Success tick overlay */
+.success-overlay{position:fixed;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:1100}
+.success-tick{width:96px;height:96px;border-radius:50%;background:#1e3b1e;border:2px solid #29b857;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(41,184,87,.6)}
+.success-tick svg{width:56px;height:56px;stroke:#29b857;stroke-width:6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.success-anim{animation:popfade .9s ease-out forwards}
+@keyframes popfade{0%{transform:scale(.6);opacity:0}40%{transform:scale(1.06);opacity:1}70%{transform:scale(1)}100%{transform:scale(1);opacity:0}}
+.calendar-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:6px 0;color:#bbb}
+.weekday{text-align:center;font-size:12px}
+.nav-btn{background:#2b2b2b;border:1px solid #3a3a3a;color:#e0e0e0;padding:6px 12px;border-radius:6px;cursor:pointer}
+.cal-title{font-weight:600}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day-cell{background:#2a2a2a;border:1px solid #3a3a3a;border-radius:6px;text-align:center;padding:10px 0;cursor:pointer}
+.day-cell.off{background:#1a1a1a;border-color:#2a2a2a;color:#777}
+.day-cell.disabled{opacity:.4;cursor:not-allowed}
+.day-cell.today{outline:2px solid #5a82ff}
+.slots h4{margin:8px 0}
+.slots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot-btn{background:#2b2b2b;border:1px solid #3a3a3a;color:#e0e0e0;padding:8px 10px;border-radius:6px;cursor:pointer}
+.slot-btn.unavailable{opacity:.5;cursor:not-allowed}
+.daysoff{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;color:#ddd}
+.daysoff label{background:#202020;border:1px solid #333;border-radius:6px;padding:8px}
+.slots-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.hours-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.hours-row{display:flex;align-items:center;gap:8px}
+.hours-row span{width:28px;color:#bbb}
+.hours-row input{flex:1;background:#202020;border:1px solid #333;border-radius:6px;color:#eee;padding:8px}

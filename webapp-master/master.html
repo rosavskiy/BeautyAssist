@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Кабинет мастера</title>
+  <link rel="stylesheet" href="/webapp-master/master.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Кабинет мастера</h1>
+    <div class="row" style="margin:8px 0 0">
+      <button id="open-dayoff-calendar" class="nav-btn">Нерабочие дни</button>
+    </div>
+    <div class="section">
+      <h2>Записи на сегодня</h2>
+      <div id="appointments"></div>
+    </div>
+    <div class="section">
+      <h2>Настройки</h2>
+      <div class="row" style="gap:8px">
+        <button id="open-dayoff-calendar" class="nav-btn">Нерабочие дни</button>
+        <button id="open-hours" class="nav-btn">Рабочее время</button>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Клиенты</h2>
+      <div id="clients"></div>
+    </div>
+     <section id="calendar-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h3>Выберите дату</h3>
+           <button id="calendar-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <div class="calendar">
+           <div class="calendar-nav">
+             <button id="cal-prev" class="nav-btn">‹</button>
+             <div id="cal-title" class="cal-title"></div>
+             <button id="cal-next" class="nav-btn">›</button>
+           </div>
+            <div class="calendar-legend">
+              <span class="legend-item"><span class="legend-dot working"></span> Рабочий</span>
+              <span class="legend-item"><span class="legend-dot off"></span> Нерабочий</span>
+              <span class="legend-item"><span class="legend-dot today"></span> Сегодня</span>
+            </div>
+           <div class="calendar-weekdays" id="calendar-weekdays">
+             <div class="weekday">Пн</div>
+             <div class="weekday">Вт</div>
+             <div class="weekday">Ср</div>
+             <div class="weekday">Чт</div>
+             <div class="weekday">Пт</div>
+             <div class="weekday">Сб</div>
+             <div class="weekday">Вс</div>
+           </div>
+           <div class="calendar-grid" id="calendar-grid"></div>
+         </div>
+         <div class="slots">
+           <h4>Доступные слоты</h4>
+           <div id="slots-list" class="slots-grid"></div>
+         </div>
+       </div>
+     </section>
+    <section id="hours-section" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Рабочее время</h3>
+          <button id="hours-close" class="icon-btn" aria-label="Закрыть">×</button>
+        </div>
+        <div class="hours-grid">
+          <div class="hours-row"><span>Пн</span><input data-day="monday" placeholder="10:00-19:00" /></div>
+          <div class="hours-row"><span>Вт</span><input data-day="tuesday" placeholder="10:00-19:00" /></div>
+          <div class="hours-row"><span>Ср</span><input data-day="wednesday" placeholder="10:00-19:00" /></div>
+          <div class="hours-row"><span>Чт</span><input data-day="thursday" placeholder="10:00-19:00" /></div>
+          <div class="hours-row"><span>Пт</span><input data-day="friday" placeholder="10:00-19:00" /></div>
+          <div class="hours-row"><span>Сб</span><input data-day="saturday" placeholder="10:00-17:00" /></div>
+          <div class="hours-row"><span>Вс</span><input data-day="sunday" placeholder="10:00-17:00" /></div>
+        </div>
+        <div class="row" style="margin-top:8px; justify-content:flex-end">
+          <button id="hours-save" class="nav-btn">Сохранить</button>
+        </div>
+      </div>
+    </section>
+
+     <section id="daysoff-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h3>Нерабочие дни</h3>
+           <button id="daysoff-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <div class="daysoff">
+           <label><input type="checkbox" value="monday"> Пн</label>
+           <label><input type="checkbox" value="tuesday"> Вт</label>
+           <label><input type="checkbox" value="wednesday"> Ср</label>
+           <label><input type="checkbox" value="thursday"> Чт</label>
+           <label><input type="checkbox" value="friday"> Пт</label>
+           <label><input type="checkbox" value="saturday"> Сб</label>
+           <label><input type="checkbox" value="sunday"> Вс</label>
+         </div>
+         <div class="row" style="margin-top:8px">
+           <button id="daysoff-save" class="nav-btn">Сохранить</button>
+         </div>
+       </div>
+     </section>
+  </div>
+  <script src="/webapp-master/master.js"></script>
+</body>
+</html>
