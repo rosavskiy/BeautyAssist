@@ -9,25 +9,100 @@
 </head>
 <body>
   <div class="container">
-    <h1>Кабинет мастера</h1>
-    <div class="row" style="margin:8px 0 0">
-      <button id="open-dayoff-calendar" class="nav-btn">Нерабочие дни</button>
+    <div class="header-row">
+      <h1>Кабинет мастера</h1>
+      <button id="open-settings" class="settings-btn" aria-label="Настройки" title="Настройки">⚙️</button>
     </div>
     <div class="section">
       <h2>Записи на сегодня</h2>
       <div id="appointments"></div>
     </div>
-    <div class="section">
-      <h2>Настройки</h2>
-      <div class="row" style="gap:8px">
-        <button id="open-dayoff-calendar" class="nav-btn">Нерабочие дни</button>
-        <button id="open-hours" class="nav-btn">Рабочее время</button>
-      </div>
-    </div>
-    <div class="section">
-      <h2>Клиенты</h2>
-      <div id="clients"></div>
-    </div>
+     <section id="settings-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>Настройки</h2>
+           <button id="settings-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <div style="margin-bottom:16px">
+           <button id="open-clients" class="nav-btn" style="width:100%">👥 Клиенты</button>
+         </div>
+         <div style="margin-bottom:16px">
+           <button id="open-services" class="nav-btn" style="width:100%">📋 Каталог услуг</button>
+         </div>
+         <div style="margin-bottom:16px">
+           <button id="open-dayoff-calendar" class="nav-btn" style="width:100%">📅 Нерабочие дни</button>
+         </div>
+         <div>
+           <button id="open-hours" class="nav-btn" style="width:100%">🕐 Рабочее время</button>
+         </div>
+       </div>
+     </section>
+
+     <section id="clients-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>Клиенты</h2>
+           <button id="clients-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <div id="clients"></div>
+       </div>
+     </section>
+
+     <section id="services-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>Каталог услуг</h2>
+           <button id="services-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <div id="services-list"></div>
+         <button id="add-service-btn" class="nav-btn" style="width:100%; margin-top:16px">➕ Добавить услугу</button>
+       </div>
+     </section>
+
+     <section id="service-edit-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2 id="service-edit-title">Новая услуга</h2>
+           <button id="service-edit-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <div class="hours-grid">
+           <div class="hours-row"><span>Название</span><input id="service-name" placeholder="Маникюр" maxlength="100" /></div>
+           <div class="hours-row"><span>Цена, ₽</span><input id="service-price" type="number" placeholder="1500" min="1" max="50000" /></div>
+           <div class="hours-row"><span>Длит., мин</span><input id="service-duration" type="number" placeholder="60" min="30" step="30" /></div>
+         </div>
+         <div class="row" style="margin-top:16px; gap:8px">
+           <button id="service-save" class="nav-btn" style="flex:1">Сохранить</button>
+           <button id="service-delete" class="nav-btn" style="flex:1; background:#D0D4DC; color:#2D3142; display:none">Удалить</button>
+         </div>
+       </div>
+     </section>
+
+     <section id="complete-confirm-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>Завершить запись</h2>
+           <button id="complete-confirm-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <p style="font-size:16px; margin:12px 0 20px">Клиент пришёл?</p>
+         <div class="row" style="gap:12px">
+           <button id="complete-no" class="nav-btn" style="flex:1; background:#D0D4DC; color:#2D3142">Нет</button>
+           <button id="complete-yes" class="nav-btn" style="flex:1">Да</button>
+         </div>
+       </div>
+     </section>
+
+     <section id="complete-payment-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>Оплата получена</h2>
+           <button id="complete-payment-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <label style="margin:12px 0 8px; display:block">Оплата получена в сумме:</label>
+         <input id="payment-amount" type="number" style="width:100%; padding:12px; border-radius:12px; border:2px solid #E8ECF1; font-size:16px" placeholder="0" />
+         <button id="complete-save" class="nav-btn" style="width:100%; margin-top:16px">Сохранить</button>
+       </div>
+     </section>
+
      <section id="calendar-section" class="modal hidden">
        <div class="modal-content">
          <div class="modal-header">
@@ -57,7 +132,7 @@
            <div class="calendar-grid" id="calendar-grid"></div>
          </div>
          <div class="slots">
-           <h4>Доступные слоты</h4>
+           <h4>Выберите рабочий/нерабочий день</h4>
            <div id="slots-list" class="slots-grid"></div>
          </div>
        </div>
@@ -100,6 +175,37 @@
          </div>
          <div class="row" style="margin-top:8px">
            <button id="daysoff-save" class="nav-btn">Сохранить</button>
+         </div>
+       </div>
+     </section>
+     
+     <!-- Separate modal for rescheduling appointments -->
+     <section id="reschedule-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h3>Перенести запись</h3>
+           <button id="reschedule-close" class="icon-btn" aria-label="Закрыть">×</button>
+         </div>
+         <div class="calendar">
+           <div class="calendar-nav">
+             <button id="reschedule-prev" class="nav-btn">‹</button>
+             <div id="reschedule-cal-title" class="cal-title"></div>
+             <button id="reschedule-next" class="nav-btn">›</button>
+           </div>
+           <div class="calendar-weekdays">
+             <div class="weekday">Пн</div>
+             <div class="weekday">Вт</div>
+             <div class="weekday">Ср</div>
+             <div class="weekday">Чт</div>
+             <div class="weekday">Пт</div>
+             <div class="weekday">Сб</div>
+             <div class="weekday">Вс</div>
+           </div>
+           <div class="calendar-grid" id="reschedule-calendar-grid"></div>
+         </div>
+         <div class="slots">
+           <h4>Доступные слоты</h4>
+           <div id="reschedule-slots-list" class="slots-grid"></div>
          </div>
        </div>
      </section>

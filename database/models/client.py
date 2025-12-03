@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, String, Text, ForeignKey
+from sqlalchemy import BigInteger, String, Text, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -50,7 +50,7 @@ class Client(Base):
     )
     
     # Statistics
-    last_visit: Mapped[datetime | None] = mapped_column(nullable=True)
+    last_visit: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     total_visits: Mapped[int] = mapped_column(default=0, nullable=False)
     total_spent: Mapped[int] = mapped_column(default=0, nullable=False, comment="Total spent in currency")
     

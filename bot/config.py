@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     
     # Telegram Bot
     bot_token: str = Field(..., description="Telegram Bot API Token")
+    bot_username: str = Field(..., description="Telegram Bot Username (without @)")
     webhook_url: str | None = Field(None, description="Webhook URL for production")
     webhook_path: str = Field("/webhook", description="Webhook path")
     webapp_base_url: AnyUrl | None = Field(None, description="Base URL to host Telegram WebApp")

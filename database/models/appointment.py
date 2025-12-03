@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, String, Integer, DateTime, ForeignKey, Text
+from sqlalchemy import BigInteger, String, Integer, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -70,6 +70,10 @@ class Appointment(Base):
     # Additional info
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    
+    # Completion tracking
+    is_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    payment_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="Actual payment received")
     
     # If rescheduled, link to previous appointment
     rescheduled_from_id: Mapped[int | None] = mapped_column(

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Мои записи</title>
+  <link rel="stylesheet" href="/webapp/styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Мои записи</h1>
+    </header>
+
+    <div id="appointments-list"></div>
+
+    <!-- Modal: Reschedule Calendar -->
+    <section id="reschedule-section" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Выберите новую дату</h3>
+          <button id="reschedule-close" class="icon-btn" aria-label="Закрыть">×</button>
+        </div>
+        <div class="calendar">
+          <div class="calendar-nav">
+            <button id="cal-prev" class="nav-btn">‹</button>
+            <div id="cal-title" class="cal-title"></div>
+            <button id="cal-next" class="nav-btn">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <div class="weekday">Пн</div>
+            <div class="weekday">Вт</div>
+            <div class="weekday">Ср</div>
+            <div class="weekday">Чт</div>
+            <div class="weekday">Пт</div>
+            <div class="weekday">Сб</div>
+            <div class="weekday">Вс</div>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+        <div class="slots-section">
+          <h4>Доступные слоты</h4>
+          <div id="slots-list" class="slots-horizontal"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/webapp/appointments.js"></script>
+</body>
+</html>

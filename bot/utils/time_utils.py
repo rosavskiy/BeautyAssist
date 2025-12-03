@@ -35,6 +35,22 @@ def generate_time_slots(
     return slots
 
 
+def generate_half_hour_slots(
+    start_time: time,
+    end_time: time,
+    date: datetime
+) -> List[datetime]:
+    """Generate 30-minute step start times within working interval."""
+    slots = []
+    current = datetime.combine(date.date(), start_time)
+    end = datetime.combine(date.date(), end_time)
+    step = timedelta(minutes=30)
+    while current < end:
+        slots.append(current)
+        current += step
+    return slots
+
+
 def get_available_dates(days_ahead: int = 14) -> List[datetime]:
     """Get list of dates for next N days."""
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)

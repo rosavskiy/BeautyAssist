@@ -13,7 +13,9 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, CallbackQuery, MenuButtonWebApp, BotCommand
+from aiogram.filters.command import CommandObject
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, CallbackQuery, MenuButtonWebApp, BotCommand, BotCommandScopeChat, MenuButtonDefault
+from aiogram import types
 from pytz import timezone as pytz_timezone
 
 from bot.config import settings
@@ -21,7 +23,7 @@ from database import async_session_maker, init_db
 from database.repositories import MasterRepository, ServiceRepository, ClientRepository, AppointmentRepository
 from database.models import Master, Service, AppointmentStatus
 from bot.keyboards import get_main_menu_keyboard
-from bot.utils.time_utils import get_available_dates, parse_work_schedule, generate_time_slots, parse_time
+from bot.utils.time_utils import get_available_dates, parse_work_schedule, generate_time_slots, parse_time, generate_half_hour_slots
 
 CITY_TZ_MAP = {
     "Москва": "Europe/Moscow",
@@ -43,10 +45,22 @@ dp = Dispatcher()
 
 
 def build_webapp_link(master: Master, service_id: Optional[int] = None) -> str:
+    """Build bot link that will show WebApp button for booking."""
+    if not settings.bot_username:
+        return ""
+    # Use bot deep link with start parameter
+    # When user opens this link, bot will show WebApp button
+    params = master.referral_code
+    if service_id:
+        params += f"_{service_id}"  # Use underscore as separator
+    return f"https://t.me/{settings.bot_username}?start={params}"
+
+
+def build_webapp_url_direct(master: Master, service_id: Optional[int] = None) -> str:
+    """Build direct WebApp URL for WebApp button."""
     if not settings.webapp_base_url:
         return ""
     base = str(settings.webapp_base_url).rstrip("/")
-    # If WEBAPP_BASE_URL already points to /webapp keep it, otherwise append
     if base.endswith("/webapp"):
         base_webapp = base
     else:
@@ -55,6 +69,18 @@ def build_webapp_link(master: Master, service_id: Optional[int] = None) -> str:
     if service_id:
         params += f"&service={service_id}"
     return f"{base_webapp}/index.html{params}"
+
+
+def build_client_appointments_url(master: Master) -> str:
+    """Build WebApp URL for client to view their appointments."""
+    if not settings.webapp_base_url:
+        return ""
+    base = str(settings.webapp_base_url).rstrip("/")
+    if base.endswith("/webapp"):
+        base_webapp = base
+    else:
+        base_webapp = base + "/webapp"
+    return f"{base_webapp}/appointments.html?code={master.referral_code}"
 
 
 def build_master_webapp_link(master: Master) -> str:
@@ -83,7 +109,45 @@ async def ensure_default_services(session, master: Master):
 
 
 @dp.message(CommandStart())
-async def on_start(message: Message):
+async def on_start(message: Message, command: CommandObject):
+    # Check if this is a client booking link (has start parameter)
+    start_param = command.args if command else None
+    
+    if start_param:
+        # Client clicked booking link: show WebApp button
+        # Parse referral_code and optional service_id
+        parts = start_param.split('_')
+        referral_code = parts[0]
+        service_id = int(parts[1]) if len(parts) > 1 else None
+        
+        async with async_session_maker() as session:
+            master = await MasterRepository(session).get_by_referral_code(referral_code)
+            if not master:
+                return await message.answer("Мастер не найден")
+            
+            webapp_url = build_webapp_url_direct(master, service_id)
+            appointments_url = build_client_appointments_url(master)
+            if not webapp_url:
+                return await message.answer("Ошибка конфигурации")
+            
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="📅 Записаться к мастеру", web_app=WebAppInfo(url=webapp_url))],
+                [InlineKeyboardButton(text="📋 Мои записи", web_app=WebAppInfo(url=appointments_url))]
+            ])
+            await message.answer(
+                f"👋 Здравствуйте!\n\n"
+                f"Нажмите кнопку ниже, чтобы выбрать услугу и время записи.",
+                reply_markup=kb
+            )
+            # Remove menu commands for clients (clear bot commands)
+            try:
+                await bot.set_my_commands(commands=[], scope=types.BotCommandScopeChat(chat_id=message.chat.id))
+                await bot.set_chat_menu_button(chat_id=message.chat.id, menu_button=types.MenuButtonDefault())
+            except Exception:
+                pass
+            return
+    
+    # Master's /start command
     async with async_session_maker() as session:
         mrepo = MasterRepository(session)
         master = await mrepo.get_by_telegram_id(message.from_user.id)
@@ -101,9 +165,8 @@ async def on_start(message: Message):
         link_master = build_master_webapp_link(master)
         text = (
             "Привет! Это BeautyAssist.\n\n"
-            "Ссылки WebApp:\n"
-            f"• Для клиентов: {link_client or 'Укажите WEBAPP_BASE_URL в .env'}\n"
-            f"• Кабинет мастера: {link_master or 'Укажите WEBAPP_BASE_URL в .env'}\n\n"
+            "Ссылка для клиентов (отправьте им):\n"
+            f"{link_client or 'Укажите BOT_USERNAME в .env'}\n\n"
             "Команды бота:\n"
             "• /menu — открыть меню с кнопками WebApp\n"
             "• /services — список услуг (добавляйте: Название;Цена;ДлительностьМин)\n"
@@ -142,7 +205,7 @@ async def cmd_menu(message: Message):
         if not master:
             return await message.answer("Нажмите /start для регистрации")
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="Открыть запись (WebApp)", web_app=WebAppInfo(url=build_webapp_link(master)))],
+            [InlineKeyboardButton(text="Открыть запись (WebApp)", web_app=WebAppInfo(url=build_webapp_url_direct(master)))],
             [InlineKeyboardButton(text="Открыть кабинет (Master)", web_app=WebAppInfo(url=build_master_webapp_link(master)))],
             [
                 InlineKeyboardButton(text="Записи: ближайший день", callback_data="next_day"),
@@ -462,27 +525,63 @@ async def api_master_appointments(request: web.Request):
         end_local = start_local + timedelta(days=1)
         start_day = start_local.astimezone(timezone.utc).replace(tzinfo=None)
         end_day = end_local.astimezone(timezone.utc).replace(tzinfo=None)
-        apps = await arepo.get_by_master(master.id, start_date=start_day, end_date=end_day)
+        
+        # Fetch today's appointments + past unprocessed
+        from sqlalchemy import select, or_
+        from database.models.appointment import Appointment
+        stmt = select(Appointment).where(
+            Appointment.master_id == master.id,
+            or_(
+                # Today's appointments
+                (Appointment.start_time >= start_day) & (Appointment.start_time < end_day),
+                # Past unprocessed (not completed and not cancelled)
+                (Appointment.start_time < start_day) & (Appointment.is_completed == False) & (Appointment.status.in_(['scheduled', 'confirmed']))
+            )
+        ).order_by(Appointment.start_time)
+        res = await session.execute(stmt)
+        apps = res.scalars().all()
+        
         result = []
         for a in apps:
             service = await srepo.get_by_id(a.service_id)
             client = await crepo.get_by_id(a.client_id)
             start_local = a.start_time.replace(tzinfo=timezone.utc).astimezone(tz)
             end_local = a.end_time.replace(tzinfo=timezone.utc).astimezone(tz)
+            is_past = a.start_time.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
             result.append({
                 "id": a.id,
                 "service": service.name if service else "",
                 "service_id": a.service_id,
+                "service_price": service.price if service else 0,
                 "client": {"name": client.name, "phone": client.phone, "username": client.telegram_username},
                 "start": start_local.isoformat(),
                 "end": end_local.isoformat(),
                 "status": a.status,
+                "is_completed": a.is_completed,
+                "is_past": is_past
             })
         # Expose simple work schedule for frontend highlighting
         return web.json_response({
             "referral_code": master.referral_code,
             "appointments": result,
-            "work_schedule": master.work_schedule or {}
+            "work_schedule": (lambda ws: {**ws, "days_off_dates": ws.get("days_off_dates", []), "days_off": ws.get("days_off", ws.get("non_working_days", []))})(master.work_schedule or {})
+        })
+
+
+@routes.get("/api/master/schedule")
+async def api_master_schedule(request: web.Request):
+    mid = request.query.get("mid")
+    if not mid:
+        return web.json_response({"error": "mid required"}, status=400)
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        return web.json_response({
+            "timezone": master.timezone,
+            "city": master.city,
+            "work_schedule": (lambda ws: {**ws, "days_off_dates": ws.get("days_off_dates", []), "days_off": ws.get("days_off", ws.get("non_working_days", []))})(master.work_schedule or {})
         })
 
 
@@ -529,6 +628,42 @@ async def api_services(request: web.Request):
             {"id": s.id, "name": s.name, "price": s.price, "duration": s.duration_minutes}
             for s in services
         ])
+
+
+@routes.get("/api/client/info")
+async def api_client_info(request: web.Request):
+    """Get client info by telegram_id to prefill booking form."""
+    code = request.query.get("code")
+    telegram_id_s = request.query.get("telegram_id")
+    if not code or not telegram_id_s:
+        return web.json_response({"error": "code and telegram_id required"}, status=400)
+    try:
+        telegram_id = int(telegram_id_s)
+    except ValueError:
+        return web.json_response({"error": "invalid telegram_id"}, status=400)
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        crepo = ClientRepository(session)
+        master = await mrepo.get_by_referral_code(code)
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        from sqlalchemy import select
+        from database.models.client import Client
+        result = await session.execute(
+            select(Client).where(
+                Client.master_id == master.id,
+                Client.telegram_id == telegram_id
+            ).limit(1)
+        )
+        client = result.scalar_one_or_none()
+        if not client:
+            return web.json_response({"found": False})
+        return web.json_response({
+            "found": True,
+            "name": client.name,
+            "phone": client.phone,
+            "telegram_username": client.telegram_username
+        })
 
 
 @routes.get("/api/slots")
@@ -580,16 +715,26 @@ async def api_slots(request: web.Request):
         slots = []
         busy_utc = [(to_aware_utc(b_start), to_aware_utc(b_end)) for b_start, b_end in busy]
         for start_t, end_t in intervals:
-            generated = generate_time_slots(start_t, end_t, service.duration_minutes, start_day)
-            for st, et in generated:
+            # Generate base 30-min start times; compute end per service duration
+            starts = generate_half_hour_slots(start_t, end_t, start_day)
+            for st in starts:
+                et = st + timedelta(minutes=service.duration_minutes)
+                # Ensure service fits within working interval
+                interval_end_dt = datetime.combine(start_day.date(), end_t)
+                if et > interval_end_dt:
+                    # Show slot but mark unavailable (doesn't fit before end of day)
+                    st_utc = to_aware_utc(st)
+                    available = st_utc > datetime.now(timezone.utc)
+                    slots.append({"start": st, "end": et, "available": False if available else False})
+                    continue
                 st_utc = to_aware_utc(st)
                 et_utc = to_aware_utc(et)
                 conflict = any((st_utc < b_end and et_utc > b_start) for b_start, b_end in busy_utc)
-                # Include all slots, mark availability; hide past slots
+                # Include all base starts, mark availability; hide past starts
                 available = (not conflict) and (st_utc > datetime.now(timezone.utc))
                 slots.append({"start": st, "end": et, "available": available})
-        # Limit to first 24 slots
-        slots = slots[:24]
+        # Limit to first 48 half-hour slots for performance
+        slots = slots[:48]
         return web.json_response([
             {"start": s["start"].isoformat(), "end": s["end"].isoformat(), "available": s["available"]}
             for s in slots
@@ -612,19 +757,8 @@ async def api_master_set_days_off(request: web.Request):
         master = await mrepo.get_by_telegram_id(int(mid)) if mid else None
         if not master:
             return web.json_response({"error": "master not found"}, status=404)
-        ws = master.work_schedule or {}
-        # Ensure keys exist for all weekdays; weekends should be available by default unless set off
-        default_interval = [["10:00", "19:00"]]
-        for key in ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]:
-            if key in days_off:
-                ws[key] = []
-            else:
-                # preserve existing schedule if present; otherwise set default interval
-                if not isinstance(ws.get(key), list):
-                    ws[key] = default_interval
-                elif ws.get(key) == []:
-                    # if previously off, make it default working
-                    ws[key] = default_interval
+        # Preserve existing hours; only update days_off and days_off_dates
+        ws = dict(master.work_schedule or {})
         ws["days_off"] = days_off
         # Store per-date day offs (YYYY-MM-DD strings)
         # Sanitize: keep only valid date strings
@@ -672,6 +806,280 @@ async def api_master_set_hours(request: web.Request):
         return web.json_response({"ok": True, "work_schedule": ws})
 
 
+@routes.post("/api/master/appointment/complete")
+async def api_master_complete_appointment(request: web.Request):
+    """Complete appointment: mark as completed, update client stats, record payment."""
+    payload = await request.json()
+    mid = payload.get("mid")
+    appointment_id = payload.get("appointment_id")
+    client_came = payload.get("client_came")  # bool
+    payment_amount = payload.get("payment_amount")  # int or None
+    
+    if not mid or not appointment_id or client_came is None:
+        return web.json_response({"error": "mid, appointment_id, client_came required"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        arepo = AppointmentRepository(session)
+        crepo = ClientRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        appointment = await arepo.get_by_id(int(appointment_id))
+        if not appointment or appointment.master_id != master.id:
+            return web.json_response({"error": "appointment not found"}, status=404)
+        
+        if not client_came:
+            # Mark as no-show
+            appointment.status = AppointmentStatus.NO_SHOW.value
+            appointment.is_completed = True
+            await arepo.update(appointment)
+            await session.commit()
+            return web.json_response({"ok": True, "message": "Marked as no-show"})
+        
+        # Client came: increment visit counter, record payment
+        client = await crepo.get_by_id(appointment.client_id)
+        if client:
+            client.total_visits += 1
+            if payment_amount is not None:
+                client.total_spent += int(payment_amount)
+            client.last_visit = appointment.start_time
+            await crepo.update(client)
+        
+        appointment.status = AppointmentStatus.COMPLETED.value
+        appointment.is_completed = True
+        appointment.payment_amount = int(payment_amount) if payment_amount is not None else None
+        await arepo.update(appointment)
+        await session.commit()
+        
+        return web.json_response({"ok": True, "message": "Appointment completed"})
+
+
+@routes.get("/api/client/appointments")
+async def api_client_appointments(request: web.Request):
+    """Get appointments for a client by telegram_id."""
+    code = request.query.get("code")
+    telegram_id = request.query.get("telegram_id")
+    
+    if not code or not telegram_id:
+        return web.json_response({"error": "code and telegram_id required"}, status=400)
+    
+    try:
+        telegram_id = int(telegram_id)
+    except Exception:
+        return web.json_response({"error": "invalid telegram_id"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        crepo = ClientRepository(session)
+        arepo = AppointmentRepository(session)
+        srepo = ServiceRepository(session)
+        
+        master = await mrepo.get_by_referral_code(code)
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        client = await crepo.get_by_telegram_id(master.id, telegram_id)
+        if not client:
+            return web.json_response({"appointments": []})
+        
+        # Get all future and recent appointments
+        from datetime import datetime, timedelta, timezone as dt_timezone
+        now = datetime.now(dt_timezone.utc)
+        past_cutoff = now - timedelta(days=30)  # Show appointments from last 30 days
+        
+        from sqlalchemy import select
+        from database.models.appointment import Appointment
+        stmt = select(Appointment).where(
+            Appointment.client_id == client.id,
+            Appointment.start_time >= past_cutoff
+        ).order_by(Appointment.start_time)
+        
+        res = await session.execute(stmt)
+        appointments = res.scalars().all()
+        
+        result = []
+        for app in appointments:
+            service = await srepo.get_by_id(app.service_id)
+            result.append({
+                "id": app.id,
+                "service": service.name if service else "Услуга",
+                "service_id": app.service_id,
+                "start": app.start_time.isoformat(),
+                "end": app.end_time.isoformat(),
+                "status": app.status,
+            })
+        
+        return web.json_response({"appointments": result})
+
+
+@routes.post("/api/client/appointment/cancel")
+async def api_client_cancel_appointment(request: web.Request):
+    """Allow client to cancel their own appointment."""
+    payload = await request.json()
+    code = payload.get("code")
+    telegram_id = payload.get("telegram_id")
+    appointment_id = payload.get("appointment_id")
+    
+    if not all([code, telegram_id, appointment_id]):
+        return web.json_response({"error": "missing fields"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        crepo = ClientRepository(session)
+        arepo = AppointmentRepository(session)
+        
+        master = await mrepo.get_by_referral_code(code)
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        client = await crepo.get_by_telegram_id(master.id, int(telegram_id))
+        if not client:
+            return web.json_response({"error": "client not found"}, status=404)
+        
+        appointment = await arepo.get_by_id(int(appointment_id))
+        if not appointment or appointment.client_id != client.id:
+            return web.json_response({"error": "appointment not found"}, status=404)
+        
+        if appointment.status not in [AppointmentStatus.SCHEDULED.value, AppointmentStatus.CONFIRMED.value]:
+            return web.json_response({"error": "cannot cancel this appointment"}, status=400)
+        
+        appointment.status = AppointmentStatus.CANCELLED.value
+        appointment.cancellation_reason = "Отменено клиентом"
+        await arepo.update(appointment)
+        await session.commit()
+        
+        # Notify master
+        try:
+            tz_name = master.timezone or "Europe/Moscow"
+            try:
+                tz = pytz_timezone(tz_name)
+                local_start = appointment.start_time.replace(tzinfo=timezone.utc).astimezone(tz)
+                when_str = local_start.strftime('%d.%m.%Y %H:%M')
+            except Exception:
+                when_str = appointment.start_time.strftime('%d.%m.%Y %H:%M')
+            
+            service = await ServiceRepository(session).get_by_id(appointment.service_id)
+            service_name = service.name if service else "Услуга"
+            
+            text = (
+                f"❌ Клиент отменил запись\n\n"
+                f"Клиент: {client.name} ({client.phone})\n"
+                f"Услуга: {service_name}\n"
+                f"Время: {when_str} ({tz_name})"
+            )
+            await bot.send_message(master.telegram_id, text)
+        except Exception:
+            pass
+        
+        return web.json_response({"ok": True})
+
+
+@routes.post("/api/client/appointment/reschedule")
+async def api_client_reschedule_appointment(request: web.Request):
+    """Allow client to reschedule their own appointment."""
+    payload = await request.json()
+    code = payload.get("code")
+    telegram_id = payload.get("telegram_id")
+    appointment_id = payload.get("appointment_id")
+    new_start_iso = payload.get("new_start")
+    
+    if not all([code, telegram_id, appointment_id, new_start_iso]):
+        return web.json_response({"error": "missing fields"}, status=400)
+    
+    try:
+        new_start = datetime.fromisoformat(new_start_iso)
+    except Exception:
+        return web.json_response({"error": "invalid date"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        crepo = ClientRepository(session)
+        arepo = AppointmentRepository(session)
+        srepo = ServiceRepository(session)
+        
+        master = await mrepo.get_by_referral_code(code)
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        client = await crepo.get_by_telegram_id(master.id, int(telegram_id))
+        if not client:
+            return web.json_response({"error": "client not found"}, status=404)
+        
+        appointment = await arepo.get_by_id(int(appointment_id))
+        if not appointment or appointment.client_id != client.id:
+            return web.json_response({"error": "appointment not found"}, status=404)
+        
+        if appointment.status not in [AppointmentStatus.SCHEDULED.value, AppointmentStatus.CONFIRMED.value]:
+            return web.json_response({"error": "cannot reschedule this appointment"}, status=400)
+        
+        service = await srepo.get_by_id(appointment.service_id)
+        if not service:
+            return web.json_response({"error": "service not found"}, status=404)
+        
+        # Normalize timezone
+        try:
+            tz = pytz_timezone(master.timezone or "Europe/Moscow")
+            if new_start.tzinfo is None:
+                local_dt = tz.localize(new_start)
+                new_start = local_dt.astimezone(timezone.utc)
+            else:
+                new_start = new_start.astimezone(timezone.utc)
+        except Exception:
+            new_start = new_start.replace(tzinfo=timezone.utc)
+        
+        new_end = new_start + timedelta(minutes=service.duration_minutes)
+        
+        # Check conflict (excluding current appointment)
+        conflict = await arepo.check_time_conflict(master.id, new_start, new_end, exclude_appointment_id=appointment.id)
+        if conflict:
+            return web.json_response({"error": "time slot not available"}, status=409)
+        
+        old_start = appointment.start_time
+        appointment.start_time = new_start
+        appointment.end_time = new_end
+        await arepo.update(appointment)
+        await session.commit()
+        
+        # Notify master
+        try:
+            tz_name = master.timezone or "Europe/Moscow"
+            try:
+                tz = pytz_timezone(tz_name)
+                old_local = old_start.replace(tzinfo=timezone.utc).astimezone(tz)
+                new_local = new_start.replace(tzinfo=timezone.utc).astimezone(tz)
+                old_str = old_local.strftime('%d.%m.%Y %H:%M')
+                new_str = new_local.strftime('%d.%m.%Y %H:%M')
+            except Exception:
+                old_str = old_start.strftime('%d.%m.%Y %H:%M')
+                new_str = new_start.strftime('%d.%m.%Y %H:%M')
+            
+            # Build clickable contact link
+            client_link = ""
+            if client.telegram_username:
+                safe_username = client.telegram_username.strip()
+                if safe_username:
+                    client_link = f" <a href=\"https://t.me/{safe_username}\">@{safe_username}</a>"
+            elif client.telegram_id:
+                client_link = f" <a href=\"tg://user?id={client.telegram_id}\">ID:{client.telegram_id}</a>"
+            
+            text = (
+                f"🔄 Клиент перенес запись\n\n"
+                f"Клиент: {client.name}{client_link}\n"
+                f"Телефон: {client.phone}\n"
+                f"Услуга: {service.name}\n"
+                f"Было: {old_str}\n"
+                f"Стало: {new_str} ({tz_name})"
+            )
+            await bot.send_message(master.telegram_id, text)
+        except Exception:
+            pass
+        
+        return web.json_response({"ok": True})
+
+
 @routes.post("/api/book")
 async def api_book(request: web.Request):
     payload = await request.json()
@@ -682,8 +1090,7 @@ async def api_book(request: web.Request):
     phone = (payload.get("phone") or "").strip()
     tg_id = payload.get("telegram_id")
     tg_username = payload.get("telegram_username")
-    client_tg_username = payload.get("telegram_username")
-    if not all([code, service_id, start_iso, name, phone]) and not client_tg_username:
+    if not all([code, service_id, start_iso, name, phone]):
         return web.json_response({"error": "missing fields"}, status=400)
     # Validate phone format: +7 followed by 10 digits
     if not isinstance(phone, str) or not phone.startswith('+7') or len(phone) != 12 or not phone[2:].isdigit():
@@ -769,18 +1176,20 @@ async def api_book(request: web.Request):
                 when_str = start_dt.strftime('%d.%m.%Y %H:%M')
             # Build clickable contact link
             client_link = ""
-            if getattr(client, "telegram_username", None):
+            if client.telegram_username:
                 safe_username = client.telegram_username.strip()
-                client_link = f"<a href=\"https://t.me/{safe_username}\">@{safe_username}</a>"
-            elif getattr(client, "telegram_id", None):
-                client_link = f"<a href=\"tg://user?id={client.telegram_id}\">tg id</a>"
+                if safe_username:
+                    client_link = f" <a href=\"https://t.me/{safe_username}\">@{safe_username}</a>"
+            elif client.telegram_id:
+                client_link = f" <a href=\"tg://user?id={client.telegram_id}\">ID:{client.telegram_id}</a>"
             text = (
                 f"🆕 Новая запись\n\n"
-                f"Клиент: {client.name} {client_link} ({client.phone})\n"
+                f"Клиент: {client.name}{client_link}\n"
+                f"Телефон: {client.phone}\n"
                 f"Услуга: {service.name}\n"
                 f"Время: {when_str} ({tz_name})"
             )
-            await bot.send_message(master.telegram_id, text)
+            await bot.send_message(master.telegram_id, text, parse_mode='HTML')
         except Exception:
             pass
         return web.json_response({"ok": True, "appointment_id": app.id})
@@ -903,12 +1312,100 @@ async def api_master_reschedule(request: web.Request):
         return web.json_response({"ok": True})
 
 
+@routes.get("/api/master/services")
+async def api_master_services(request: web.Request):
+    """Get all services for a master (including inactive)."""
+    mid = request.query.get("mid")
+    if not mid:
+        return web.json_response({"error": "mid required"}, status=400)
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        srepo = ServiceRepository(session)
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        services = await srepo.get_all_by_master(master.id, active_only=False)
+        return web.json_response([
+            {"id": s.id, "name": s.name, "price": s.price, "duration": s.duration_minutes}
+            for s in services
+        ])
+
+
+@routes.post("/api/master/service/save")
+async def api_master_service_save(request: web.Request):
+    """Create or update a service."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    mid = data.get("mid")
+    service_id = data.get("service_id")
+    name = data.get("name", "").strip()
+    price = data.get("price")
+    duration = data.get("duration")
+    if not mid or not name or price is None or duration is None:
+        return web.json_response({"error": "mid, name, price, duration required"}, status=400)
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        srepo = ServiceRepository(session)
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        if service_id:
+            # Update existing
+            service = await srepo.get_by_id(int(service_id))
+            if not service or service.master_id != master.id:
+                return web.json_response({"error": "service not found"}, status=404)
+            service.name = name
+            service.price = price
+            service.duration_minutes = duration
+        else:
+            # Create new
+            service = Service(
+                master_id=master.id,
+                name=name,
+                price=price,
+                duration_minutes=duration,
+                is_active=True
+            )
+            session.add(service)
+        await session.commit()
+        return web.json_response({"ok": True})
+
+
+@routes.post("/api/master/service/delete")
+async def api_master_service_delete(request: web.Request):
+    """Soft-delete a service by setting is_active=False."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    mid = data.get("mid")
+    service_id = data.get("service_id")
+    if not mid or not service_id:
+        return web.json_response({"error": "mid, service_id required"}, status=400)
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        srepo = ServiceRepository(session)
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        service = await srepo.get_by_id(int(service_id))
+        if not service or service.master_id != master.id:
+            return web.json_response({"error": "service not found"}, status=404)
+        service.is_active = False
+        await session.commit()
+        return web.json_response({"ok": True})
+
+
 async def build_app() -> web.Application:
     app = web.Application()
     app.add_routes(routes)
-    # Static webapp files
-    app.router.add_static('/webapp', path='webapp', name='webapp')
-    app.router.add_static('/webapp-master', path='webapp-master', name='webapp-master')
+    # Static webapp files with cache busting
+    import time
+    cache_bust = str(int(time.time()))
+    app.router.add_static('/webapp', path='webapp', name='webapp', append_version=True)
+    app.router.add_static('/webapp-master', path='webapp-master', name='webapp-master', append_version=True)
     return app
 
 

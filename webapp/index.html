@@ -21,7 +21,33 @@
 
     <section>
       <label>Дата</label>
-      <input type="date" id="date-input" />
+      <button id="date-btn" class="date-btn">Выберите дату</button>
+    </section>
+
+    <section id="calendar-section" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Выберите дату</h3>
+          <button id="calendar-close" class="icon-btn" aria-label="Закрыть">×</button>
+        </div>
+        <div class="calendar">
+          <div class="calendar-nav">
+            <button id="cal-prev" class="nav-btn">‹</button>
+            <div id="cal-title" class="cal-title"></div>
+            <button id="cal-next" class="nav-btn">›</button>
+          </div>
+          <div class="calendar-weekdays" id="calendar-weekdays">
+            <div class="weekday">Пн</div>
+            <div class="weekday">Вт</div>
+            <div class="weekday">Ср</div>
+            <div class="weekday">Чт</div>
+            <div class="weekday">Пт</div>
+            <div class="weekday">Сб</div>
+            <div class="weekday">Вс</div>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+      </div>
     </section>
 
     <section>
