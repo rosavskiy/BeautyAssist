@@ -97,23 +97,11 @@ WantedBy=multi-user.target
 EOF
 
 # Configure Nginx
-echo "🌐 Configuring Nginx..."
+echo "🌐 Configuring Nginx (HTTP only, SSL will be added by certbot)..."
 cat > /etc/nginx/sites-available/beautyassist << 'EOF'
 server {
     listen 80;
     server_name your-domain.com;
-
-    # Redirect HTTP to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name your-domain.com;
-
-    # SSL certificates (will be configured by certbot)
-    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
 
     # Static files
     location /webapp/ {

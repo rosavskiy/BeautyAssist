@@ -35,10 +35,13 @@ venv.bak/
 *.swo
 *~
 
-# Environment variables
+# Environment variables (игнорируем реальные .env, но не шаблоны)
 .env
 .env.local
-.env.*.local
+
+# Разрешаем шаблоны для документации
+# .env.development (шаблон)
+# .env.production (шаблон)
 
 # Database
 *.db

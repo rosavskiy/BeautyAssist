@@ -43,11 +43,96 @@ BeautyAssist - это простой и доступный Telegram-бот с Mi
 
 ## Технологический стек
 
-- **Backend**: Python 3.11+
+- **Backend**: Python 3.13
 - **Telegram API**: aiogram 3.x
 - **Database**: PostgreSQL + SQLAlchemy (async)
 - **Task Queue**: Redis + APScheduler (планировщик напоминаний)
 - **Migrations**: Alembic
+- **Web Server**: Nginx + SSL (Let's Encrypt)
+
+## Быстрый старт
+
+### Локальная разработка
+
+```powershell
+# 1. Клонируйте репозиторий
+git clone https://github.com/rosavskiy/BeautyAssist.git
+cd BeautyAssist
+
+# 2. Создайте .env из шаблона
+Copy-Item .env.development .env
+
+# 3. Создайте DEV бота через @BotFather и укажите токен в .env
+
+# 4. Настройте локальную БД
+psql -U postgres -c "CREATE DATABASE beautyassist_dev;"
+
+# 5. Установите зависимости
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# 6. Примените миграции
+alembic upgrade head
+
+# 7. Запустите ngrok для webhook
+ngrok http 8080
+# Скопируйте URL и обновите WEBHOOK_URL в .env
+
+# 8. Запустите бота
+python -m bot.main
+```
+
+**Подробная инструкция:** [DEVELOPMENT.md](DEVELOPMENT.md)
+
+### Production деплой
+
+```bash
+# На сервере (Ubuntu 24.04+)
+cd /root
+git clone https://github.com/rosavskiy/BeautyAssist.git
+cd BeautyAssist
+
+# Первоначальная настройка
+bash server-setup.sh
+
+# Создайте .env из шаблона production
+cp .env.production .env
+# Отредактируйте .env (укажите пароль БД)
+
+# Настройте SSL
+certbot --nginx -d mybeautyassist.ru
+
+# Последующие обновления
+bash deploy-server.sh
+```
+
+**Подробная инструкция:** [DEPLOY.md](DEPLOY.md) | [QUICKSTART.md](QUICKSTART.md)
+
+## Структура проекта
+
+```
+BeautyAssist/
+├── bot/                    # Telegram bot
+│   ├── handlers/          # Обработчики команд и коллбеков
+│   ├── keyboards/         # Клавиатуры и inline-кнопки
+│   ├── middlewares/       # Мидлвари
+│   ├── utils/            # Утилиты (форматирование, время)
+│   └── config.py         # Конфигурация (pydantic-settings)
+├── database/              # База данных
+│   ├── models/           # SQLAlchemy модели
+│   ├── repositories/     # Репозитории для работы с БД
+│   └── base.py          # Инициализация БД
+├── services/              # Бизнес-логика
+│   ├── notifications.py  # Отправка уведомлений
+│   └── scheduler.py      # Планировщик задач
+├── webapp/                # WebApp для клиентов
+├── webapp-master/         # Dashboard для мастера
+├── alembic/              # Миграции БД
+├── tests/                # Тесты
+├── .env.development      # Шаблон для dev окружения
+└── .env.production       # Шаблон для production
+```
 
 ## Структура проекта
 

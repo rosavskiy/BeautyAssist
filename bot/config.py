@@ -1,4 +1,5 @@
 """Configuration management using pydantic-settings."""
+import os
 from pydantic import Field, PostgresDsn, AnyUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -11,6 +12,12 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
+    )
+    
+    # Environment
+    environment: str = Field(
+        default_factory=lambda: os.getenv("ENVIRONMENT", "development"),
+        description="Environment: development, staging, production"
     )
     
     # Telegram Bot
