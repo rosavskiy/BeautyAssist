@@ -76,10 +76,6 @@ EOF
 
 echo "⚠️ IMPORTANT: Edit /root/BeautyAssist/.env and set your real values!"
 
-# Run database migrations
-echo "🗄️ Running database migrations..."
-alembic upgrade head
-
 # Create systemd service
 echo "⚙️ Creating systemd service..."
 cat > /etc/systemd/system/beautyassist-bot.service << 'EOF'
@@ -157,10 +153,11 @@ echo ""
 echo "📝 Next steps:"
 echo "1. Edit /root/BeautyAssist/.env with your real values"
 echo "2. Update Nginx config: nano /etc/nginx/sites-available/beautyassist"
-echo "3. Get SSL certificate: certbot --nginx -d your-domain.com"
-echo "4. Start the bot: systemctl start beautyassist-bot"
-echo "5. Enable autostart: systemctl enable beautyassist-bot"
-echo "6. Reload Nginx: systemctl reload nginx"
+echo "3. Run database migrations: cd /root/BeautyAssist && source venv/bin/activate && alembic upgrade head"
+echo "4. Get SSL certificate: certbot --nginx -d your-domain.com"
+echo "5. Start the bot: systemctl start beautyassist-bot"
+echo "6. Enable autostart: systemctl enable beautyassist-bot"
+echo "7. Reload Nginx: systemctl reload nginx"
 echo ""
 echo "🔍 Check status: systemctl status beautyassist-bot"
 echo "📋 View logs: journalctl -u beautyassist-bot -f"
