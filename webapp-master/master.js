@@ -109,6 +109,10 @@
     if(ev.target.id === 'clients-close') document.getElementById('clients-section').classList.add('hidden');
     if(ev.target.id === 'open-services'){ loadServices(); document.getElementById('settings-section').classList.add('hidden'); document.getElementById('services-section').classList.remove('hidden'); }
     if(ev.target.id === 'services-close') document.getElementById('services-section').classList.add('hidden');
+    if(ev.target.id === 'open-finances'){ 
+      const url = `/webapp-master/finances.html?mid=${encodeURIComponent(mid)}`;
+      window.location.href = url;
+    }
     if(ev.target.id === 'add-service-btn') openServiceEdit(null);
     if(ev.target.id === 'service-edit-close') document.getElementById('service-edit-section').classList.add('hidden');
     if(ev.target.id === 'service-save') saveService();
@@ -136,7 +140,8 @@
       const apps = data.appointments;
       if(!apps.length){ el.textContent = 'На сегодня записей нет'; return; }
       apps.forEach(a => {
-        const card = document.createElement('div'); card.className='card';
+        const card = document.createElement('div'); 
+        card.className='card';
         const when = new Date(a.start).toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'});
         
         // Translate status
@@ -151,20 +156,35 @@
         if(a.is_completed) card.style.opacity = '0.5';
         
         // Build client info with links
-        let clientInfo = a.client.name;
-        if(a.client.username) clientInfo += ` <a href="https://t.me/${a.client.username}" target="_blank">@${a.client.username}</a>`;
-        else if(a.client.telegram_id) clientInfo += ` <a href="tg://user?id=${a.client.telegram_id}">ID:${a.client.telegram_id}</a>`;
-        clientInfo += ` (${a.client.phone})`;
+        let clientLink = '';
+        if(a.client.username) {
+          clientLink = ` <a href="https://t.me/${a.client.username}" target="_blank">@${a.client.username}</a>`;
+        } else if(a.client.telegram_id) {
+          clientLink = ` <a href="tg://user?id=${a.client.telegram_id}">ID:${a.client.telegram_id}</a>`;
+        }
         
-        card.innerHTML = `<div class="row"><div>${when} — ${a.service}</div><div class="muted">${statusText}</div></div>
-          <div>${clientInfo}</div>`;
+        // Строка 1: Время, услуга, статус
+        const line1 = document.createElement('div');
+        line1.style.cssText = 'font-weight: 600; font-size: 15px; margin-bottom: 6px; width: 100%; white-space: normal;';
+        line1.innerHTML = `${when} — ${a.service} <span style="color: #7C88A0; font-weight: 400; font-size: 13px;">(${statusText})</span>`;
+        card.appendChild(line1);
+        
+        // Строка 2: Имя и ссылка
+        const line2 = document.createElement('div');
+        line2.style.cssText = 'font-size: 14px; margin-bottom: 4px; width: 100%; white-space: normal;';
+        line2.innerHTML = `${a.client.name}${clientLink}`;
+        card.appendChild(line2);
+        
+        // Строка 3: Телефон
+        const line3 = document.createElement('div');
+        line3.style.cssText = 'color: #7C88A0; font-size: 13px; margin-bottom: 12px; width: 100%; white-space: normal;';
+        line3.textContent = a.client.phone;
+        card.appendChild(line3);
         
         // Show action buttons only if not completed
         if(!a.is_completed){
           const btnRow = document.createElement('div');
-          btnRow.className = 'row';
-          btnRow.style.gap = '8px';
-          btnRow.style.marginTop = '12px';
+          btnRow.style.cssText = 'display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid #E8ECF1; flex-wrap: wrap;';
           btnRow.innerHTML = `
             <button data-id="${a.id}" class="action-btn btn-cancel">Отменить</button>
             <button data-id="${a.id}" data-start="${a.start}" data-service="${a.service_id}" class="action-btn btn-reschedule">Перенести</button>

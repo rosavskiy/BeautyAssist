@@ -180,11 +180,50 @@ class AppointmentRepository:
                 Appointment.start_time >= target_time - timedelta(minutes=30),
                 Appointment.start_time <= target_time + timedelta(minutes=30)
             )
-        ).options(
+        )
+        
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+    
+    async def get_past_incomplete(
+        self,
+        master_id: Optional[int] = None,
+        before_time: Optional[datetime] = None
+    ) -> List[Appointment]:
+        """
+        Get past appointments that are not completed (is_completed=False).
+        Useful for reminding master to mark appointments as completed.
+        
+        Args:
+            master_id: Filter by master (optional)
+            before_time: Get appointments before this time (default: now)
+        
+        Returns:
+            List of incomplete past appointments
+        """
+        if before_time is None:
+            from datetime import timezone as tz
+            before_time = datetime.now(tz.utc)
+        
+        query = select(Appointment).where(
+            and_(
+                Appointment.start_time < before_time,
+                Appointment.is_completed == False,
+                Appointment.status.in_([
+                    AppointmentStatus.SCHEDULED.value,
+                    AppointmentStatus.CONFIRMED.value
+                ])
+            )
+        )
+        
+        if master_id:
+            query = query.where(Appointment.master_id == master_id)
+        
+        query = query.options(
             selectinload(Appointment.client),
             selectinload(Appointment.service),
             selectinload(Appointment.master)
-        )
+        ).order_by(Appointment.start_time.desc())
         
         result = await self.session.execute(query)
         return list(result.scalars().all())

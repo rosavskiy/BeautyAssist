@@ -36,6 +36,11 @@ class MasterRepository:
         )
         return result.scalar_one_or_none()
     
+    async def get_all(self) -> list[Master]:
+        """Get all masters."""
+        result = await self.session.execute(select(Master))
+        return list(result.scalars().all())
+    
     async def create(
         self,
         telegram_id: int,

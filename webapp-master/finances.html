@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Финансы</title>
+  <meta name="theme-color" content="#B8A7D6" />
+  <meta name="color-scheme" content="light" />
+  <link rel="stylesheet" href="/webapp-master/master.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* Telegram WebApp theme colors for native date picker */
+    :root {
+      color-scheme: light;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="fin-app">
+    <header class="fin-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button id="back-to-master" class="icon-btn" style="font-size: 24px;" title="Назад">‹</button>
+        <h1 class="fin-title">💰 Финансы</h1>
+      </div>
+      <div class="fin-periods">
+        <button class="period-btn active" data-period="week">Неделя</button>
+        <button class="period-btn" data-period="month">Месяц</button>
+        <button class="period-btn" data-period="year">Год</button>
+        <button class="period-btn" data-period="custom">Период</button>
+      </div>
+    </header>
+
+    <!-- Custom period selector (hidden by default) -->
+    <section id="custom-period" class="fin-custom-period custom-period hidden">
+      <input type="text" id="start-date" placeholder="дд.мм.гггг" readonly />
+      <span>—</span>
+      <input type="text" id="end-date" placeholder="дд.мм.гггг" readonly />
+      <button id="apply-period" class="btn-primary">Применить</button>
+    </section>
+
+    <!-- Calendar for period selection -->
+    <section id="period-calendar-section" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="period-calendar-title">Выберите дату</h2>
+          <button id="period-calendar-close" class="icon-btn">×</button>
+        </div>
+        <div class="calendar">
+          <div class="calendar-nav">
+            <button id="period-cal-prev" class="nav-btn">‹</button>
+            <div id="period-cal-title" class="cal-title"></div>
+            <button id="period-cal-next" class="nav-btn">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <div class="weekday">Пн</div>
+            <div class="weekday">Вт</div>
+            <div class="weekday">Ср</div>
+            <div class="weekday">Чт</div>
+            <div class="weekday">Пт</div>
+            <div class="weekday">Сб</div>
+            <div class="weekday">Вс</div>
+          </div>
+          <div class="calendar-grid" id="period-calendar-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Financial Summary Cards -->
+    <section class="fin-summary">
+      <div class="fin-card fin-revenue">
+        <div class="fin-icon">📈</div>
+        <div class="fin-content">
+          <div class="fin-label">Выручка</div>
+          <div class="fin-value" id="total-revenue">0 ₽</div>
+          <div class="fin-sub" id="appointments-count">0 записей</div>
+        </div>
+      </div>
+      <div class="fin-card fin-expenses">
+        <div class="fin-icon">📉</div>
+        <div class="fin-content">
+          <div class="fin-label">Расходы</div>
+          <div class="fin-value" id="total-expenses">0 ₽</div>
+          <div class="fin-sub" id="expenses-count">0 позиций</div>
+        </div>
+      </div>
+      <div class="fin-card fin-profit">
+        <div class="fin-icon">💎</div>
+        <div class="fin-content">
+          <div class="fin-label">Прибыль</div>
+          <div class="fin-value" id="total-profit">0 ₽</div>
+          <div class="fin-sub" id="profit-margin">0%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="fin-charts charts">
+      <div class="fin-chart chart-container">
+        <h3>Выручка по услугам</h3>
+        <canvas id="revenue-chart"></canvas>
+      </div>
+      <div class="fin-chart chart-container">
+        <h3>Расходы по категориям</h3>
+        <canvas id="expenses-chart"></canvas>
+      </div>
+    </section>
+
+    <!-- Expenses Management -->
+    <section class="fin-expenses expenses-section">
+      <div class="fin-expenses-header section-header">
+        <h2>Расходы</h2>
+        <button id="add-expense-btn" class="btn-add">+ Добавить</button>
+      </div>
+      <div id="expenses-list" class="fin-expenses-list expenses-list"></div>
+    </section>
+
+    <!-- Add/Edit Expense Modal -->
+    <div id="expense-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-title">Новый расход</h3>
+          <button id="modal-close" class="icon-btn">×</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="expense-id" />
+          
+          <label>Категория</label>
+          <select id="expense-category">
+            <option value="materials">Материалы</option>
+            <option value="rent">Аренда</option>
+            <option value="advertising">Реклама</option>
+            <option value="transport">Транспорт</option>
+            <option value="education">Обучение</option>
+            <option value="equipment">Оборудование</option>
+            <option value="other">Другое</option>
+          </select>
+          
+          <label>Сумма (₽)</label>
+          <input type="number" id="expense-amount" placeholder="1000" min="0" />
+          
+          <label>Дата</label>
+          <input type="text" id="expense-date" placeholder="дд.мм.гггг" readonly />
+          
+          <label>Описание (необязательно)</label>
+          <textarea id="expense-description" rows="3" placeholder="Комментарий к расходу"></textarea>
+          
+          <div class="modal-actions">
+            <button id="save-expense" class="btn-primary">Сохранить</button>
+            <button id="cancel-expense" class="btn-secondary">Отмена</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar for expense date -->
+    <section id="expense-calendar-section" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Выберите дату</h2>
+          <button id="expense-calendar-close" class="icon-btn">×</button>
+        </div>
+        <div class="calendar">
+          <div class="calendar-nav">
+            <button id="expense-cal-prev" class="nav-btn">‹</button>
+            <div id="expense-cal-title" class="cal-title"></div>
+            <button id="expense-cal-next" class="nav-btn">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <div class="weekday">Пн</div>
+            <div class="weekday">Вт</div>
+            <div class="weekday">Ср</div>
+            <div class="weekday">Чт</div>
+            <div class="weekday">Пт</div>
+            <div class="weekday">Сб</div>
+            <div class="weekday">Вс</div>
+          </div>
+          <div class="calendar-grid" id="expense-calendar-grid"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/webapp-master/finances.js"></script>
+</body>
+</html>

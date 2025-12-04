@@ -646,3 +646,39 @@ button.loading::after {
   70% { transform: scale(1); }
   100% { transform: scale(1); opacity: 0; }
 }
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 0 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 2px solid #E8ECF1;
+  border-radius: 20px;
+  background: #FFFFFF;
+  color: #2D3142;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-btn:hover {
+  background: #F0EDF7;
+  border-color: #D4C9E8;
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #B8A7D6 0%, #A89CC9 100%);
+  border-color: #B8A7D6;
+  color: #FFFFFF;
+}
+

@@ -17,6 +17,7 @@
   const slotsEl = document.getElementById('slots');
   const nameEl = document.getElementById('client-name');
   const phoneEl = document.getElementById('client-phone');
+  const commentEl = document.getElementById('client-comment');
   const submitBtn = document.getElementById('submit-btn');
   const statusEl = document.getElementById('status');
 
@@ -259,7 +260,8 @@
         name,
         phone: '+7' + getRawDigitsFromPhone(),
         telegram_id,
-        telegram_username
+        telegram_username,
+        client_comment: commentEl.value.trim()
       })
     });
     const json = await res.json();

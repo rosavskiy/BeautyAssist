@@ -15,10 +15,12 @@
   const calTitle = document.getElementById('cal-title');
   const calendarGrid = document.getElementById('calendar-grid');
   const slotsList = document.getElementById('slots-list');
+  const filterBtns = document.querySelectorAll('.filter-btn');
 
   let currentMonth = new Date();
   let currentAppointmentId = null;
   let currentServiceId = null;
+  let currentFilter = 'upcoming';
 
   function api(path){ return fetch(path).then(r => r.json()); }
   function showSuccessTick(callback){
@@ -31,6 +33,16 @@
       if(typeof callback === 'function') callback();
     }, 900);
   }
+
+  // Filter buttons
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      loadAppointments();
+    });
+  });
 
   // Calendar functions
   function renderCalendar(){
@@ -173,7 +185,7 @@
     }
     
     try {
-      const data = await api(`/api/client/appointments?code=${encodeURIComponent(masterCode)}&telegram_id=${telegram_id}`);
+      const data = await api(`/api/client/appointments?code=${encodeURIComponent(masterCode)}&telegram_id=${telegram_id}&status=${currentFilter}`);
       appointmentsList.innerHTML = '';
       
       if(!data || !Array.isArray(data.appointments) || !data.appointments.length){
@@ -191,23 +203,57 @@
         
         let statusText = app.status;
         let statusClass = '';
-        if(app.status === 'scheduled') { statusText = 'Запланирована'; statusClass = 'status-scheduled'; }
-        else if(app.status === 'confirmed') { statusText = 'Подтверждена'; statusClass = 'status-confirmed'; }
-        else if(app.status === 'cancelled') { statusText = 'Отменена'; statusClass = 'status-cancelled'; }
-        else if(app.status === 'completed') { statusText = 'Завершена'; statusClass = 'status-completed'; }
-        else if(app.status === 'no_show') { statusText = 'Не явились'; statusClass = 'status-no-show'; }
+        let statusIcon = '';
+        if(app.status === 'scheduled') { 
+          statusText = 'Запланирована'; 
+          statusClass = 'status-scheduled';
+          statusIcon = '📋';
+        }
+        else if(app.status === 'confirmed') { 
+          statusText = 'Подтверждена'; 
+          statusClass = 'status-confirmed';
+          statusIcon = '✅';
+        }
+        else if(app.status === 'cancelled') { 
+          statusText = 'Отменена'; 
+          statusClass = 'status-cancelled';
+          statusIcon = '❌';
+        }
+        else if(app.status === 'completed') { 
+          statusText = 'Завершена'; 
+          statusClass = 'status-completed';
+          statusIcon = '✔️';
+        }
+        else if(app.status === 'no_show') { 
+          statusText = 'Не явились'; 
+          statusClass = 'status-no-show';
+          statusIcon = '⚠️';
+        }
         
         const canModify = ['scheduled', 'confirmed'].includes(app.status);
+        const isPast = new Date(app.start) < new Date();
+        
+        let paymentInfo = '';
+        if(app.is_completed && app.payment_amount > 0) {
+          paymentInfo = `<div style="color: #4CAF50; margin-top: 8px;">💰 Оплачено: ${app.payment_amount} ₽</div>`;
+        }
+        
+        let commentInfo = '';
+        if(app.client_comment) {
+          commentInfo = `<div style="color: #7C88A0; margin-top: 8px; padding: 8px; background: #F5F7FA; border-radius: 8px;">💬 ${app.client_comment}</div>`;
+        }
         
         card.innerHTML = `
           <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
             <div style="font-weight: 600; font-size: 16px;">${app.service}</div>
-            <div class="badge ${statusClass}">${statusText}</div>
+            <div class="badge ${statusClass}">${statusIcon} ${statusText}</div>
           </div>
           <div style="color: #7C88A0; margin-bottom: 4px;">📅 ${dateStr}</div>
           <div style="color: #7C88A0; margin-bottom: 12px;">🕐 ${timeStr}</div>
-          ${canModify ? `
-            <div class="row" style="gap: 8px;">
+          ${commentInfo}
+          ${paymentInfo}
+          ${canModify && !isPast ? `
+            <div class="row" style="gap: 8px; margin-top: 12px;">
               <button class="btn-cancel" data-id="${app.id}">Отменить</button>
               <button class="btn-reschedule" data-id="${app.id}" data-service="${app.service_id}">Перенести</button>
             </div>

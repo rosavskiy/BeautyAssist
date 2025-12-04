@@ -20,10 +20,11 @@ from pytz import timezone as pytz_timezone
 
 from bot.config import settings
 from database import async_session_maker, init_db
-from database.repositories import MasterRepository, ServiceRepository, ClientRepository, AppointmentRepository
+from database.repositories import MasterRepository, ServiceRepository, ClientRepository, AppointmentRepository, ReminderRepository
 from database.models import Master, Service, AppointmentStatus
 from bot.keyboards import get_main_menu_keyboard
 from bot.utils.time_utils import get_available_dates, parse_work_schedule, generate_time_slots, parse_time, generate_half_hour_slots
+from services.scheduler import create_appointment_reminders
 
 CITY_TZ_MAP = {
     "Москва": "Europe/Moscow",
@@ -494,6 +495,329 @@ async def cb_set_city(call: CallbackQuery):
     await call.answer()
 
 
+@dp.callback_query(F.data.startswith("complete_appt:"))
+async def cb_complete_appointment(call: CallbackQuery):
+    """Quick complete appointment from notification."""
+    try:
+        appointment_id = int(call.data.split(":", 1)[1])
+    except (ValueError, IndexError):
+        await call.answer("Ошибка: неверный ID записи", show_alert=True)
+        return
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        arepo = AppointmentRepository(session)
+        crepo = ClientRepository(session)
+        srepo = ServiceRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(call.from_user.id)
+        if not master:
+            await call.answer("Мастер не найден", show_alert=True)
+            return
+        
+        appointment = await arepo.get_by_id(appointment_id)
+        if not appointment or appointment.master_id != master.id:
+            await call.answer("Запись не найдена", show_alert=True)
+            return
+        
+        # Ask for confirmation with payment buttons
+        client = await crepo.get_by_id(appointment.client_id)
+        service = await srepo.get_by_id(appointment.service_id)
+        
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Пришёл", callback_data=f"confirm_came:{appointment_id}"),
+                InlineKeyboardButton(text="❌ Не пришёл", callback_data=f"confirm_noshow:{appointment_id}")
+            ],
+            [InlineKeyboardButton(text="🔙 Отмена", callback_data="cancel_action")]
+        ])
+        
+        tz = pytz_timezone(master.timezone or "Europe/Moscow")
+        local_time = appointment.start_time.replace(tzinfo=timezone.utc).astimezone(tz)
+        
+        msg = (
+            f"📋 <b>Завершить запись?</b>\n\n"
+            f"Клиент: {client.name}\n"
+            f"Услуга: {service.name if service else 'Услуга'}\n"
+            f"Время: {local_time.strftime('%d.%m.%Y %H:%M')}\n\n"
+            f"Клиент пришёл?"
+        )
+        
+        try:
+            await call.message.edit_text(msg, reply_markup=kb, parse_mode="HTML")
+        except Exception:
+            await call.message.answer(msg, reply_markup=kb, parse_mode="HTML")
+        
+        await call.answer()
+
+
+@dp.callback_query(F.data.startswith("confirm_came:"))
+async def cb_confirm_came(call: CallbackQuery):
+    """Mark appointment as completed with payment."""
+    try:
+        appointment_id = int(call.data.split(":", 1)[1])
+    except (ValueError, IndexError):
+        await call.answer("Ошибка", show_alert=True)
+        return
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        arepo = AppointmentRepository(session)
+        crepo = ClientRepository(session)
+        srepo = ServiceRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(call.from_user.id)
+        if not master:
+            await call.answer("Мастер не найден", show_alert=True)
+            return
+        
+        appointment = await arepo.get_by_id(appointment_id)
+        if not appointment or appointment.master_id != master.id:
+            await call.answer("Запись не найдена", show_alert=True)
+            return
+        
+        service = await srepo.get_by_id(appointment.service_id)
+        client = await crepo.get_by_id(appointment.client_id)
+        
+        # Complete appointment
+        appointment.status = AppointmentStatus.COMPLETED.value
+        appointment.is_completed = True
+        appointment.payment_amount = service.price if service else 0
+        
+        # Update client stats
+        if client:
+            client.total_visits += 1
+            client.total_spent += appointment.payment_amount
+            client.last_visit = appointment.start_time
+            await crepo.update(client)
+        
+        await arepo.update(appointment)
+        await session.commit()
+        
+        msg = (
+            f"✅ <b>Запись завершена</b>\n\n"
+            f"Клиент: {client.name}\n"
+            f"Оплата: {appointment.payment_amount} ₽"
+        )
+        
+        try:
+            await call.message.edit_text(msg, parse_mode="HTML")
+        except Exception:
+            await call.message.answer(msg, parse_mode="HTML")
+        
+        await call.answer("Запись завершена ✅")
+
+
+@dp.callback_query(F.data.startswith("confirm_noshow:"))
+async def cb_confirm_noshow(call: CallbackQuery):
+    """Mark appointment as no-show."""
+    try:
+        appointment_id = int(call.data.split(":", 1)[1])
+    except (ValueError, IndexError):
+        await call.answer("Ошибка", show_alert=True)
+        return
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        arepo = AppointmentRepository(session)
+        crepo = ClientRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(call.from_user.id)
+        if not master:
+            await call.answer("Мастер не найден", show_alert=True)
+            return
+        
+        appointment = await arepo.get_by_id(appointment_id)
+        if not appointment or appointment.master_id != master.id:
+            await call.answer("Запись не найдена", show_alert=True)
+            return
+        
+        client = await crepo.get_by_id(appointment.client_id)
+        
+        # Mark as no-show
+        appointment.status = AppointmentStatus.NO_SHOW.value
+        appointment.is_completed = True
+        await arepo.update(appointment)
+        await session.commit()
+        
+        msg = f"❌ <b>Отмечено: клиент не пришёл</b>\n\nКлиент: {client.name}"
+        
+        try:
+            await call.message.edit_text(msg, parse_mode="HTML")
+        except Exception:
+            await call.message.answer(msg, parse_mode="HTML")
+        
+        await call.answer("Отмечено как неявка")
+
+
+@dp.callback_query(F.data == "cancel_action")
+async def cb_cancel_action(call: CallbackQuery):
+    """Cancel action."""
+    try:
+        await call.message.delete()
+    except Exception:
+        pass
+    await call.answer("Отменено")
+
+
+@dp.callback_query(F.data.startswith("client_confirm:"))
+async def cb_client_confirm_appointment(call: CallbackQuery):
+    """Client confirms they will attend the appointment."""
+    try:
+        appointment_id = int(call.data.split(":")[1])
+    except (IndexError, ValueError):
+        await call.answer("❌ Ошибка данных", show_alert=True)
+        return
+    
+    try:
+        async with async_session_maker() as session:
+            arepo = AppointmentRepository(session)
+            app = await arepo.get_by_id(appointment_id)
+            
+            if not app:
+                await call.answer("❌ Запись не найдена", show_alert=True)
+                return
+            
+            # Update status to confirmed
+            app.status = AppointmentStatus.CONFIRMED.value
+            session.add(app)
+            await session.commit()
+            
+            # Notify client
+            await call.message.edit_text(
+                f"✅ <b>Запись подтверждена!</b>\n\n"
+                f"Спасибо! Ждём вас {app.start_time.strftime('%d.%m.%Y в %H:%M')}",
+                parse_mode="HTML"
+            )
+            
+            # Notify master
+            if app.master and app.master.telegram_id:
+                try:
+                    master_tz = pytz_timezone(app.master.timezone or "Europe/Moscow")
+                    local_time = app.start_time.replace(tzinfo=timezone.utc).astimezone(master_tz)
+                    service_name = app.service.name if app.service else "Услуга"
+                    
+                    await bot.send_message(
+                        app.master.telegram_id,
+                        f"✅ <b>Клиент подтвердил запись!</b>\n\n"
+                        f"👤 {app.client.name}\n"
+                        f"📱 {app.client.phone}\n"
+                        f"📋 {service_name}\n"
+                        f"📅 {local_time.strftime('%d.%m.%Y в %H:%M')}",
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+            
+            await call.answer("✅ Запись подтверждена!")
+    except Exception as e:
+        await call.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
+
+
+@dp.callback_query(F.data.startswith("client_cancel:"))
+async def cb_client_cancel_appointment(call: CallbackQuery):
+    """Client wants to cancel the appointment."""
+    try:
+        appointment_id = int(call.data.split(":")[1])
+    except (IndexError, ValueError):
+        await call.answer("❌ Ошибка данных", show_alert=True)
+        return
+    
+    try:
+        async with async_session_maker() as session:
+            arepo = AppointmentRepository(session)
+            app = await arepo.get_by_id(appointment_id)
+            
+            if not app:
+                await call.answer("❌ Запись не найдена", show_alert=True)
+                return
+            
+            # Show confirmation with reason buttons
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="Подтвердить отмену",
+                    callback_data=f"client_cancel_confirm:{appointment_id}"
+                )],
+                [InlineKeyboardButton(
+                    text="Оставить запись",
+                    callback_data="cancel_action"
+                )]
+            ])
+            
+            await call.message.edit_text(
+                f"⚠️ <b>Отмена записи</b>\n\n"
+                f"Вы уверены, что хотите отменить запись на {app.start_time.strftime('%d.%m.%Y в %H:%M')}?\n\n"
+                f"Пожалуйста, предупредите мастера заранее, чтобы он мог освободить время для других клиентов.",
+                parse_mode="HTML",
+                reply_markup=keyboard
+            )
+            await call.answer()
+    except Exception as e:
+        await call.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
+
+
+@dp.callback_query(F.data.startswith("client_cancel_confirm:"))
+async def cb_client_cancel_confirm(call: CallbackQuery):
+    """Client confirmed cancellation."""
+    try:
+        appointment_id = int(call.data.split(":")[1])
+    except (IndexError, ValueError):
+        await call.answer("❌ Ошибка данных", show_alert=True)
+        return
+    
+    try:
+        async with async_session_maker() as session:
+            arepo = AppointmentRepository(session)
+            app = await arepo.get_by_id(appointment_id)
+            
+            if not app:
+                await call.answer("❌ Запись не найдена", show_alert=True)
+                return
+            
+            # Cancel appointment
+            app.status = AppointmentStatus.CANCELLED.value
+            session.add(app)
+            await session.commit()
+            
+            # Cancel reminders
+            from database.repositories import ReminderRepository
+            reminder_repo = ReminderRepository(session)
+            await reminder_repo.cancel_appointment_reminders(appointment_id)
+            await session.commit()
+            
+            # Notify client
+            await call.message.edit_text(
+                f"❌ <b>Запись отменена</b>\n\n"
+                f"Запись на {app.start_time.strftime('%d.%m.%Y в %H:%M')} отменена.\n"
+                f"Будем рады видеть вас в другое время!",
+                parse_mode="HTML"
+            )
+            
+            # Notify master
+            if app.master and app.master.telegram_id:
+                try:
+                    master_tz = pytz_timezone(app.master.timezone or "Europe/Moscow")
+                    local_time = app.start_time.replace(tzinfo=timezone.utc).astimezone(master_tz)
+                    service_name = app.service.name if app.service else "Услуга"
+                    
+                    await bot.send_message(
+                        app.master.telegram_id,
+                        f"❌ <b>Клиент отменил запись</b>\n\n"
+                        f"👤 {app.client.name}\n"
+                        f"📱 {app.client.phone}\n"
+                        f"📋 {service_name}\n"
+                        f"📅 {local_time.strftime('%d.%m.%Y в %H:%M')}\n\n"
+                        f"Время освободилось для других клиентов.",
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+            
+            await call.answer("Запись отменена")
+    except Exception as e:
+        await call.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
+
+
 # ========== Aiohttp App (API + Webhook + Static) ==========
 
 routes = web.RouteTableDef()
@@ -862,6 +1186,7 @@ async def api_client_appointments(request: web.Request):
     """Get appointments for a client by telegram_id."""
     code = request.query.get("code")
     telegram_id = request.query.get("telegram_id")
+    status_filter = request.query.get("status")  # optional: 'upcoming', 'past', 'cancelled', 'all'
     
     if not code or not telegram_id:
         return web.json_response({"error": "code and telegram_id required"}, status=400)
@@ -885,17 +1210,34 @@ async def api_client_appointments(request: web.Request):
         if not client:
             return web.json_response({"appointments": []})
         
-        # Get all future and recent appointments
-        from datetime import datetime, timedelta, timezone as dt_timezone
-        now = datetime.now(dt_timezone.utc)
-        past_cutoff = now - timedelta(days=30)  # Show appointments from last 30 days
-        
-        from sqlalchemy import select
+        # Get appointments based on filter
+        from datetime import datetime, timezone as dt_timezone
+        from sqlalchemy import select, and_, or_
         from database.models.appointment import Appointment
+        
+        now = datetime.now(dt_timezone.utc)
+        
+        # Build query based on status filter
+        conditions = [Appointment.client_id == client.id]
+        
+        if status_filter == "upcoming":
+            # Future appointments that are not cancelled
+            conditions.append(Appointment.start_time >= now)
+            conditions.append(Appointment.status.in_(["scheduled", "confirmed"]))
+        elif status_filter == "past":
+            # Past appointments (completed or no-show)
+            conditions.append(or_(
+                Appointment.start_time < now,
+                Appointment.status.in_(["completed", "no_show"])
+            ))
+        elif status_filter == "cancelled":
+            # Only cancelled
+            conditions.append(Appointment.status == "cancelled")
+        # else: 'all' or no filter - show everything
+        
         stmt = select(Appointment).where(
-            Appointment.client_id == client.id,
-            Appointment.start_time >= past_cutoff
-        ).order_by(Appointment.start_time)
+            and_(*conditions)
+        ).order_by(Appointment.start_time.desc())
         
         res = await session.execute(stmt)
         appointments = res.scalars().all()
@@ -910,6 +1252,9 @@ async def api_client_appointments(request: web.Request):
                 "start": app.start_time.isoformat(),
                 "end": app.end_time.isoformat(),
                 "status": app.status,
+                "is_completed": app.is_completed,
+                "payment_amount": app.payment_amount if app.payment_amount else 0,
+                "client_comment": app.client_comment if app.client_comment else "",
             })
         
         return web.json_response({"appointments": result})
@@ -949,6 +1294,14 @@ async def api_client_cancel_appointment(request: web.Request):
         appointment.status = AppointmentStatus.CANCELLED.value
         appointment.cancellation_reason = "Отменено клиентом"
         await arepo.update(appointment)
+        
+        # Cancel all reminders for this appointment
+        try:
+            reminder_repo = ReminderRepository(session)
+            await reminder_repo.cancel_appointment_reminders(appointment.id)
+        except Exception:
+            pass
+        
         await session.commit()
         
         # Notify master
@@ -1041,6 +1394,13 @@ async def api_client_reschedule_appointment(request: web.Request):
         appointment.start_time = new_start
         appointment.end_time = new_end
         await arepo.update(appointment)
+        
+        # Recreate reminders for rescheduled appointment
+        try:
+            await create_appointment_reminders(session, appointment, cancel_existing=True)
+        except Exception:
+            pass  # Don't fail reschedule if reminders fail
+        
         await session.commit()
         
         # Notify master
@@ -1090,6 +1450,7 @@ async def api_book(request: web.Request):
     phone = (payload.get("phone") or "").strip()
     tg_id = payload.get("telegram_id")
     tg_username = payload.get("telegram_username")
+    client_comment = (payload.get("client_comment") or "").strip()  # Client's comment
     if not all([code, service_id, start_iso, name, phone]):
         return web.json_response({"error": "missing fields"}, status=400)
     # Validate phone format: +7 followed by 10 digits
@@ -1164,6 +1525,16 @@ async def api_book(request: web.Request):
             await crepo.update(client)
         # Create appointment
         app = await arepo.create(master.id, client.id, service.id, start_dt, end_dt)
+        if client_comment:
+            app.client_comment = client_comment
+        await session.flush()
+        
+        # Create reminders for appointment
+        try:
+            await create_appointment_reminders(session, app, cancel_existing=False)
+        except Exception:
+            pass  # Don't fail booking if reminders fail
+        
         await session.commit()
         # Notify master
         try:
@@ -1189,6 +1560,8 @@ async def api_book(request: web.Request):
                 f"Услуга: {service.name}\n"
                 f"Время: {when_str} ({tz_name})"
             )
+            if client_comment:
+                text += f"\n💬 Комментарий: {client_comment}"
             await bot.send_message(master.telegram_id, text, parse_mode='HTML')
         except Exception:
             pass
@@ -1214,8 +1587,16 @@ async def api_master_cancel(request: web.Request):
         app = await arepo.get_by_id(appointment_id)
         if not app or app.master_id != master.id:
             return web.json_response({"error": "appointment not found"}, status=404)
-        app.status = AppointmentStatus.CANCELED.value
+        app.status = AppointmentStatus.CANCELLED.value
         session.add(app)
+        
+        # Cancel all reminders for this appointment
+        try:
+            reminder_repo = ReminderRepository(session)
+            await reminder_repo.cancel_appointment_reminders(app.id)
+        except Exception:
+            pass
+        
         await session.commit()
         # Notify master
         try:
@@ -1287,6 +1668,13 @@ async def api_master_reschedule(request: web.Request):
         app.end_time = new_end
         app.status = AppointmentStatus.SCHEDULED.value
         session.add(app)
+        
+        # Recreate reminders for rescheduled appointment
+        try:
+            await create_appointment_reminders(session, app, cancel_existing=True)
+        except Exception:
+            pass
+        
         await session.commit()
         # Notify master
         try:
@@ -1398,6 +1786,321 @@ async def api_master_service_delete(request: web.Request):
         return web.json_response({"ok": True})
 
 
+# ========== Expense Management APIs ==========
+
+@routes.post("/api/master/expense/create")
+async def api_master_expense_create(request: web.Request):
+    """Create a new expense."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    
+    mid = data.get("mid")
+    category = data.get("category")
+    amount = data.get("amount")
+    expense_date_iso = data.get("expense_date")
+    description = data.get("description", "")
+    
+    if not all([mid, category, amount, expense_date_iso]):
+        return web.json_response({"error": "mid, category, amount, expense_date required"}, status=400)
+    
+    try:
+        amount = int(amount)
+        expense_date = datetime.fromisoformat(expense_date_iso)
+    except Exception:
+        return web.json_response({"error": "invalid amount or date"}, status=400)
+    
+    async with async_session_maker() as session:
+        from database.repositories import ExpenseRepository
+        mrepo = MasterRepository(session)
+        erepo = ExpenseRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        expense = await erepo.create(
+            master_id=master.id,
+            category=category,
+            amount=amount,
+            expense_date=expense_date,
+            description=description
+        )
+        await session.commit()
+        
+        return web.json_response({
+            "ok": True,
+            "expense": {
+                "id": expense.id,
+                "category": expense.category,
+                "amount": expense.amount,
+                "expense_date": expense.expense_date.isoformat(),
+                "description": expense.description
+            }
+        })
+
+
+@routes.get("/api/master/expenses")
+async def api_master_expenses(request: web.Request):
+    """Get expenses for a master with optional filters."""
+    mid = request.query.get("mid")
+    start_date_iso = request.query.get("start_date")
+    end_date_iso = request.query.get("end_date")
+    category = request.query.get("category")
+    
+    if not mid:
+        return web.json_response({"error": "mid required"}, status=400)
+    
+    start_date = None
+    end_date = None
+    
+    try:
+        if start_date_iso:
+            start_date = datetime.fromisoformat(start_date_iso)
+        if end_date_iso:
+            end_date = datetime.fromisoformat(end_date_iso)
+    except Exception:
+        return web.json_response({"error": "invalid date format"}, status=400)
+    
+    async with async_session_maker() as session:
+        from database.repositories import ExpenseRepository
+        mrepo = MasterRepository(session)
+        erepo = ExpenseRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        expenses = await erepo.get_by_master(
+            master_id=master.id,
+            start_date=start_date,
+            end_date=end_date,
+            category=category
+        )
+        
+        return web.json_response({
+            "expenses": [
+                {
+                    "id": e.id,
+                    "category": e.category,
+                    "amount": e.amount,
+                    "expense_date": e.expense_date.isoformat(),
+                    "description": e.description or ""
+                }
+                for e in expenses
+            ]
+        })
+
+
+@routes.post("/api/master/expense/update")
+async def api_master_expense_update(request: web.Request):
+    """Update an existing expense."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    
+    mid = data.get("mid")
+    expense_id = data.get("expense_id")
+    
+    if not all([mid, expense_id]):
+        return web.json_response({"error": "mid and expense_id required"}, status=400)
+    
+    async with async_session_maker() as session:
+        from database.repositories import ExpenseRepository
+        mrepo = MasterRepository(session)
+        erepo = ExpenseRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        expense = await erepo.get_by_id(int(expense_id))
+        if not expense or expense.master_id != master.id:
+            return web.json_response({"error": "expense not found"}, status=404)
+        
+        # Update fields if provided
+        if "category" in data:
+            expense.category = data["category"]
+        if "amount" in data:
+            try:
+                expense.amount = int(data["amount"])
+            except Exception:
+                return web.json_response({"error": "invalid amount"}, status=400)
+        if "expense_date" in data:
+            try:
+                expense.expense_date = datetime.fromisoformat(data["expense_date"])
+            except Exception:
+                return web.json_response({"error": "invalid date"}, status=400)
+        if "description" in data:
+            expense.description = data["description"]
+        
+        await erepo.update(expense)
+        await session.commit()
+        
+        return web.json_response({"ok": True})
+
+
+@routes.post("/api/master/expense/delete")
+async def api_master_expense_delete(request: web.Request):
+    """Delete an expense."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    
+    mid = data.get("mid")
+    expense_id = data.get("expense_id")
+    
+    if not all([mid, expense_id]):
+        return web.json_response({"error": "mid and expense_id required"}, status=400)
+    
+    async with async_session_maker() as session:
+        from database.repositories import ExpenseRepository
+        mrepo = MasterRepository(session)
+        erepo = ExpenseRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        expense = await erepo.get_by_id(int(expense_id))
+        if not expense or expense.master_id != master.id:
+            return web.json_response({"error": "expense not found"}, status=404)
+        
+        await erepo.delete(int(expense_id))
+        await session.commit()
+        
+        return web.json_response({"ok": True})
+
+
+# ========== Financial Analytics APIs ==========
+
+@routes.get("/api/master/analytics/financial")
+async def api_master_analytics_financial(request: web.Request):
+    """Get financial analytics for a master."""
+    mid = request.query.get("mid")
+    start_date_iso = request.query.get("start_date")
+    end_date_iso = request.query.get("end_date")
+    
+    if not all([mid, start_date_iso, end_date_iso]):
+        return web.json_response({"error": "mid, start_date, end_date required"}, status=400)
+    
+    try:
+        start_date = datetime.fromisoformat(start_date_iso)
+        end_date = datetime.fromisoformat(end_date_iso)
+    except Exception:
+        return web.json_response({"error": "invalid date format"}, status=400)
+    
+    async with async_session_maker() as session:
+        from database.repositories import ExpenseRepository
+        mrepo = MasterRepository(session)
+        arepo = AppointmentRepository(session)
+        erepo = ExpenseRepository(session)
+        srepo = ServiceRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        # Get completed appointments in period
+        from sqlalchemy import select, and_, func
+        from database.models.appointment import Appointment
+        
+        # Revenue calculation
+        revenue_stmt = (
+            select(func.sum(Appointment.payment_amount))
+            .where(
+                and_(
+                    Appointment.master_id == master.id,
+                    Appointment.is_completed == True,
+                    Appointment.start_time >= start_date,
+                    Appointment.start_time <= end_date
+                )
+            )
+        )
+        revenue_result = await session.execute(revenue_stmt)
+        total_revenue = revenue_result.scalar() or 0
+        
+        # Count of completed appointments
+        count_stmt = (
+            select(func.count(Appointment.id))
+            .where(
+                and_(
+                    Appointment.master_id == master.id,
+                    Appointment.is_completed == True,
+                    Appointment.start_time >= start_date,
+                    Appointment.start_time <= end_date
+                )
+            )
+        )
+        count_result = await session.execute(count_stmt)
+        appointments_count = count_result.scalar() or 0
+        
+        # Revenue by service
+        revenue_by_service_stmt = (
+            select(
+                Appointment.service_id,
+                func.sum(Appointment.payment_amount).label('total'),
+                func.count(Appointment.id).label('count')
+            )
+            .where(
+                and_(
+                    Appointment.master_id == master.id,
+                    Appointment.is_completed == True,
+                    Appointment.start_time >= start_date,
+                    Appointment.start_time <= end_date
+                )
+            )
+            .group_by(Appointment.service_id)
+            .order_by(func.sum(Appointment.payment_amount).desc())
+        )
+        revenue_by_service_result = await session.execute(revenue_by_service_stmt)
+        revenue_by_service = []
+        for row in revenue_by_service_result.all():
+            service = await srepo.get_by_id(row.service_id)
+            revenue_by_service.append({
+                "service_name": service.name if service else "Unknown",
+                "revenue": row.total or 0,
+                "count": row.count
+            })
+        
+        # Total expenses
+        total_expenses = await erepo.get_total_by_period(
+            master_id=master.id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # Expenses by category
+        expenses_by_category = await erepo.get_expenses_by_category(
+            master_id=master.id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # Calculate profit
+        profit = total_revenue - total_expenses
+        
+        return web.json_response({
+            "period": {
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat()
+            },
+            "revenue": {
+                "total": total_revenue,
+                "appointments_count": appointments_count,
+                "by_service": revenue_by_service
+            },
+            "expenses": {
+                "total": total_expenses,
+                "by_category": expenses_by_category
+            },
+            "profit": profit
+        })
+
+
 async def build_app() -> web.Application:
     app = web.Application()
     app.add_routes(routes)
@@ -1409,6 +2112,59 @@ async def build_app() -> web.Application:
     return app
 
 
+# ========== Reminder Scheduler ==========
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from services.notifications import send_due_reminders
+from services.incomplete_checker import check_and_notify_incomplete
+
+reminder_scheduler = AsyncIOScheduler()
+
+
+async def scan_and_send_reminders():
+    """Background task to scan and send due reminders."""
+    try:
+        async with async_session_maker() as session:
+            sent_count = await send_due_reminders(bot, session)
+            if sent_count > 0:
+                print(f"✅ Sent {sent_count} reminders")
+    except Exception as e:
+        print(f"❌ Error sending reminders: {e}")
+
+
+async def check_incomplete_appointments():
+    """Background task to notify masters about incomplete appointments."""
+    try:
+        async with async_session_maker() as session:
+            await check_and_notify_incomplete(bot, session)
+    except Exception as e:
+        print(f"❌ Error checking incomplete appointments: {e}")
+
+
+def start_reminder_scheduler():
+    """Start the reminder scheduler. Runs every minute."""
+    reminder_scheduler.add_job(
+        scan_and_send_reminders,
+        'interval',
+        minutes=1,
+        id='reminder_scanner',
+        replace_existing=True
+    )
+    
+    # Check incomplete appointments daily at 9:00 AM
+    reminder_scheduler.add_job(
+        check_incomplete_appointments,
+        'cron',
+        hour=9,
+        minute=0,
+        id='incomplete_checker',
+        replace_existing=True
+    )
+    
+    reminder_scheduler.start()
+    print("📅 Reminder scheduler started (runs every 1 minute)")
+    print("⏰ Incomplete appointments checker scheduled (daily at 9:00 AM)")
+
+
 async def main():
     await init_db()
     app = await build_app()
@@ -1416,6 +2172,9 @@ async def main():
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', 8080)
     await site.start()
+
+    # Start reminder scheduler
+    start_reminder_scheduler()
 
     # Run bot polling
     await dp.start_polling(bot)

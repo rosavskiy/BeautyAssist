@@ -68,7 +68,8 @@ class Appointment(Base):
     )
     
     # Additional info
-    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)  # Master's comment
+    client_comment: Mapped[str | None] = mapped_column(Text, nullable=True)  # Client's comment when booking
     cancellation_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     
     # Completion tracking
