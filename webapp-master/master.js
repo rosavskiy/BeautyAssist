@@ -8,6 +8,10 @@
 
   let currentAppointmentId = null;
   let currentServicePrice = 0;
+  
+  // Date navigation state
+  let selectedDate = new Date(); // Start with today
+  selectedDate.setHours(0, 0, 0, 0);
 
   // Calendar state
   const cal = {
@@ -128,10 +132,70 @@
     if(ev.target.id === 'complete-yes') handleCompleteYes();
     if(ev.target.id === 'complete-payment-close') document.getElementById('complete-payment-section').classList.add('hidden');
     if(ev.target.id === 'complete-save') handleCompleteSave();
+    
+    // Date navigation
+    if(ev.target.id === 'date-prev') changeDate(-1);
+    if(ev.target.id === 'date-today') changeDate('today');
+    if(ev.target.id === 'date-next') changeDate(1);
+    if(ev.target.id === 'date-calendar') openDatePickerCalendar();
   });
 
+  function changeDate(direction) {
+    if (direction === 'today') {
+      selectedDate = new Date();
+      selectedDate.setHours(0, 0, 0, 0);
+    } else {
+      selectedDate.setDate(selectedDate.getDate() + direction);
+    }
+    loadAppointments();
+  }
+
+  function openDatePickerCalendar() {
+    openCalendar((dateStr) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      selectedDate = new Date(year, month - 1, day);
+      selectedDate.setHours(0, 0, 0, 0);
+      closeCalendar();
+      loadAppointments();
+    });
+  }
+
+  function formatDateTitle(date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    if (date.getTime() === today.getTime()) {
+      return `Записи на сегодня, ${dateStr}`;
+    } else if (date.getTime() === tomorrow.getTime()) {
+      return `Записи на завтра, ${dateStr}`;
+    } else if (date.getTime() === yesterday.getTime()) {
+      return `Записи на вчера, ${dateStr}`;
+    } else {
+      return `Записи на ${dateStr}`;
+    }
+  }
+
   async function loadAppointments(){
-    const data = await api(`/api/master/appointments?mid=${encodeURIComponent(mid)}`);
+    // Format date as YYYY-MM-DD in LOCAL date (not influenced by time)
+    // This ensures the date sent to server matches what user sees
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    const data = await api(`/api/master/appointments?mid=${encodeURIComponent(mid)}&date=${dateStr}`);
+    
+    // Update title
+    const titleEl = document.getElementById('appointments-title');
+    const count = data?.appointments?.length || 0;
+    titleEl.textContent = `${formatDateTitle(selectedDate)} (${count})`;
+    
     const el = document.getElementById('appointments');
     el.innerHTML = '';
     // Store schedule for calendar highlighting
@@ -148,12 +212,19 @@
         let statusText = a.status;
         if(a.status === 'scheduled') statusText = 'Запланирована';
         else if(a.status === 'confirmed') statusText = 'Подтверждена';
-        else if(a.status === 'cancelled') statusText = 'Отменена';
-        else if(a.status === 'completed') statusText = 'Завершена';
-        else if(a.status === 'no_show') statusText = 'Не явился';
+        else if(a.status === 'cancelled') statusText = '❌ Отменена';
+        else if(a.status === 'completed') statusText = '✅ Завершена';
+        else if(a.status === 'no_show') statusText = '⚠️ Не явился';
         
-        // Gray out completed appointments
-        if(a.is_completed) card.style.opacity = '0.5';
+        // Visual styling for completed/cancelled appointments
+        if(a.is_completed) {
+          card.style.opacity = '0.6';
+          card.style.background = 'linear-gradient(to right, #f0fdf4, #ffffff)';
+        }
+        if(a.status === 'cancelled') {
+          card.style.opacity = '0.6';
+          card.style.background = 'linear-gradient(to right, #fef2f2, #ffffff)';
+        }
         
         // Build client info with links
         let clientLink = '';
@@ -181,8 +252,8 @@
         line3.textContent = a.client.phone;
         card.appendChild(line3);
         
-        // Show action buttons only if not completed
-        if(!a.is_completed){
+        // Show action buttons only if not completed and not cancelled
+        if(!a.is_completed && a.status !== 'cancelled'){
           const btnRow = document.createElement('div');
           btnRow.style.cssText = 'display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid #E8ECF1; flex-wrap: wrap;';
           btnRow.innerHTML = `
@@ -194,16 +265,14 @@
         
         el.appendChild(card);
       });
+      
+      let currentCancelAppointmentId = null;
+      
       el.querySelectorAll('.btn-cancel').forEach(btn => btn.addEventListener('click', async (ev) => {
-        const id = ev.target.getAttribute('data-id');
-        const reason = prompt('Причина отмены (необязательно):') || '';
-        const res = await fetch('/api/master/appointment/cancel', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ mid, appointment_id: Number(id), reason })
-        });
-        const json = await res.json();
-        if(json && json.ok){ loadAppointments(); }
-        else alert('Ошибка отмены: ' + (json?.error || '')); 
+        currentCancelAppointmentId = ev.target.getAttribute('data-id');
+        document.getElementById('cancel-reason-section').classList.remove('hidden');
+        document.getElementById('cancel-reason-input').value = '';
+        document.getElementById('cancel-reason-input').focus();
       }));
       el.querySelectorAll('.btn-reschedule').forEach(btn => btn.addEventListener('click', async (ev) => {
         const id = ev.target.getAttribute('data-id');
@@ -534,6 +603,47 @@
       } else { alert('Ошибка удаления: ' + (js?.error || '')); }
     } catch(e){ alert('Ошибка запроса'); }
   }
+
+  // Cancel reason modal handlers
+  document.getElementById('cancel-reason-close').addEventListener('click', () => {
+    document.getElementById('cancel-reason-section').classList.add('hidden');
+    currentCancelAppointmentId = null;
+  });
+
+  document.getElementById('cancel-reason-skip').addEventListener('click', () => {
+    document.getElementById('cancel-reason-section').classList.add('hidden');
+    currentCancelAppointmentId = null;
+  });
+
+  document.getElementById('cancel-reason-confirm').addEventListener('click', async () => {
+    if (!currentCancelAppointmentId) return;
+    
+    const reason = document.getElementById('cancel-reason-input').value.trim();
+    
+    try {
+      const res = await fetch('/api/master/appointment/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          mid, 
+          appointment_id: Number(currentCancelAppointmentId), 
+          reason 
+        })
+      });
+      const json = await res.json();
+      
+      if (json && json.ok) {
+        document.getElementById('cancel-reason-section').classList.add('hidden');
+        currentCancelAppointmentId = null;
+        showSuccessTick();
+        loadAppointments();
+      } else {
+        alert('Ошибка отмены: ' + (json?.error || ''));
+      }
+    } catch (e) {
+      alert('Ошибка запроса');
+    }
+  });
 
   loadAppointments().catch(e => status('appointments error', e));
 })();

@@ -1,6 +1,7 @@
 """Test reminder creation and sending."""
 import asyncio
 from datetime import datetime, timedelta, timezone
+import pytest
 
 from database import async_session_maker, init_db
 from database.repositories import MasterRepository, ServiceRepository, ClientRepository, AppointmentRepository, ReminderRepository
@@ -8,6 +9,7 @@ from database.models import ReminderStatus, ReminderType
 from services.scheduler import create_appointment_reminders
 
 
+@pytest.mark.asyncio
 async def test_reminders():
     """Test reminder creation for an appointment."""
     await init_db()

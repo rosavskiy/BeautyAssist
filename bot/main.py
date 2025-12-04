@@ -152,7 +152,9 @@ async def on_start(message: Message, command: CommandObject):
     async with async_session_maker() as session:
         mrepo = MasterRepository(session)
         master = await mrepo.get_by_telegram_id(message.from_user.id)
+        is_new_master = False
         if not master:
+            is_new_master = True
             name = (message.from_user.full_name or "Мастер").strip()
             master = await mrepo.create(
                 telegram_id=message.from_user.id,
@@ -160,21 +162,60 @@ async def on_start(message: Message, command: CommandObject):
                 telegram_username=message.from_user.username,
             )
             await session.commit()
+        
+        # Check if initial setup is needed
+        needs_setup = not master.city or not master.timezone or not master.work_schedule
+        
+        if is_new_master or needs_setup:
+            # Start onboarding flow
+            await message.answer(
+                "👋 <b>Добро пожаловать в BeautyAssist!</b>\n\n"
+                "Я помогу вам автоматизировать запись клиентов и управление записями.\n\n"
+                "Давайте настроим ваш профиль за несколько шагов:"
+            )
+            
+            # Step 1: City/Timezone
+            if not master.city or not master.timezone:
+                rows = []
+                cities = list(CITY_TZ_MAP.keys())
+                for i in range(0, len(cities), 2):
+                    chunk = cities[i:i+2]
+                    rows.append([InlineKeyboardButton(text=c, callback_data=f"setup_city:{c}") for c in chunk])
+                kb = InlineKeyboardMarkup(inline_keyboard=rows)
+                return await message.answer(
+                    "📍 <b>Шаг 1/2: Выберите ваш город</b>\n\n"
+                    "Это нужно для правильного отображения времени записей:",
+                    reply_markup=kb
+                )
+            
+            # Step 2: Work schedule
+            if not master.work_schedule:
+                return await message.answer(
+                    "📅 <b>Шаг 2/2: Установите график работы</b>\n\n"
+                    "Отправьте график в формате:\n"
+                    "<code>ПН-ПТ 10:00-19:00; СБ-ВС 10:00-17:00</code>\n\n"
+                    "Или используйте команду /schedule для установки базового графика (ПН-ПТ 10-19, СБ-ВС 10-17)."
+                )
+        
         # Seed default services if empty
         await ensure_default_services(session, master)
         link_client = build_webapp_link(master)
         link_master = build_master_webapp_link(master)
+        schedule_str = format_work_schedule(master.work_schedule)
         text = (
-            "Привет! Это BeautyAssist.\n\n"
-            "Ссылка для клиентов (отправьте им):\n"
+            "✅ <b>Профиль настроен! Можно работать!</b>\n\n"
+            "📋 <b>Ваши настройки:</b>\n"
+            f"• Город: {master.city}\n"
+            f"• График: {schedule_str}\n\n"
+            "🔗 <b>Ссылка для клиентов</b> (отправьте им):\n"
             f"{link_client or 'Укажите BOT_USERNAME в .env'}\n\n"
-            "Команды бота:\n"
+            "📱 <b>Команды бота:</b>\n"
             "• /menu — открыть меню с кнопками WebApp\n"
             "• /services — список услуг (добавляйте: Название;Цена;ДлительностьМин)\n"
             "• /appointments — записи на сегодня\n"
             "• /clients — список клиентов\n"
-            "• /schedule — выставить базовый график (10–19; сб-вс 10–17)\n"
-            "• /city &lt;Город&gt; — установить город/таймзону (пример: /city Саратов)\n"
+            "• /schedule — изменить график работы\n"
+            "• /city — изменить город/таймзону\n"
         )
         await message.answer(text)
         # Set chat menu WebApp button (blue near input) to Master cabinet
@@ -425,9 +466,13 @@ async def add_service_freeform(message: Message):
 @dp.message(Command("schedule"))
 async def cmd_schedule(message: Message):
     async with async_session_maker() as session:
-        master = await MasterRepository(session).get_by_telegram_id(message.from_user.id)
+        mrepo = MasterRepository(session)
+        master = await mrepo.get_by_telegram_id(message.from_user.id)
         if not master:
             return await message.answer("Нажмите /start для регистрации")
+        
+        was_empty = not master.work_schedule
+        
         if not master.work_schedule:
             master.work_schedule = {
                 "monday": [["10:00", "19:00"]],
@@ -438,9 +483,16 @@ async def cmd_schedule(message: Message):
                 "saturday": [["10:00", "17:00"]],
                 "sunday": [["10:00", "17:00"]],
             }
-            await MasterRepository(session).update(master)
+            await mrepo.update(master)
             await session.commit()
-        return await message.answer("График сохранён по умолчанию (пн-пт 10-19, сб-вс 10-17). Настройте в кабинете мастера.")
+        
+        await message.answer("✅ График сохранён по умолчанию (ПН-ПТ 10-19, СБ-ВС 10-17).\nНастроить детально можно в кабинете мастера.")
+        
+        # If this was during onboarding (city set but no schedule), show completion
+        if was_empty and master.city:
+            # Get fresh master after commit
+            updated_master = await mrepo.get_by_telegram_id(message.from_user.id)
+            await show_setup_complete_message(message, updated_master)
 
 
 @dp.message(Command("city"))
@@ -493,6 +545,158 @@ async def cb_set_city(call: CallbackQuery):
     except Exception:
         await call.message.answer(f"Город сохранён: {city}. Таймзона: {tz}.")
     await call.answer()
+
+
+@dp.callback_query(F.data.startswith("setup_city:"))
+async def cb_setup_city(call: CallbackQuery):
+    """Handler for city selection during onboarding."""
+    city = call.data.split(":", 1)[1]
+    tz = CITY_TZ_MAP.get(city)
+    
+    needs_schedule = False
+    updated_master = None
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        master = await mrepo.get_by_telegram_id(call.from_user.id)
+        if not master:
+            await call.answer("Сначала отправьте /start", show_alert=True)
+            return
+        if not tz:
+            await call.answer("Неизвестный город", show_alert=True)
+            return
+        master.city = city
+        master.timezone = tz
+        await mrepo.update(master)
+        await session.commit()
+        
+        # Check if work schedule is set
+        needs_schedule = not master.work_schedule
+        
+        # Get fresh copy for showing completion message
+        updated_master = await mrepo.get_by_telegram_id(call.from_user.id)
+    
+    try:
+        await call.message.edit_text(f"✅ Город установлен: {city}")
+    except Exception:
+        pass
+    
+    await call.answer()
+    
+    if needs_schedule:
+        # Continue to next step
+        await call.message.answer(
+            "📅 <b>Шаг 2/2: Установите график работы</b>\n\n"
+            "Отправьте график в формате:\n"
+            "<code>ПН-ПТ 10:00-19:00; СБ-ВС 10:00-17:00</code>\n\n"
+            "Или используйте команду /schedule для установки базового графика (ПН-ПТ 10-19, СБ-ВС 10-17)."
+        )
+    else:
+        # Setup complete, show final message
+        await show_setup_complete_message(call.message, updated_master)
+
+
+def format_work_schedule(schedule: dict) -> str:
+    """Format work schedule dict to readable string."""
+    if not schedule:
+        return "не установлен"
+    
+    day_names = {
+        'monday': 'ПН',
+        'tuesday': 'ВТ',
+        'wednesday': 'СР',
+        'thursday': 'ЧТ',
+        'friday': 'ПТ',
+        'saturday': 'СБ',
+        'sunday': 'ВС'
+    }
+    
+    # Group consecutive days with same hours
+    days_order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    groups = []
+    current_group = None
+    
+    for day in days_order:
+        hours = schedule.get(day)
+        if not hours:
+            if current_group:
+                groups.append(current_group)
+                current_group = None
+            continue
+        
+        hours_str = ', '.join([f"{h[0]}-{h[1]}" for h in hours])
+        
+        if current_group and current_group['hours'] == hours_str:
+            current_group['days'].append(day_names[day])
+        else:
+            if current_group:
+                groups.append(current_group)
+            current_group = {'days': [day_names[day]], 'hours': hours_str}
+    
+    if current_group:
+        groups.append(current_group)
+    
+    # Format groups
+    result = []
+    for group in groups:
+        days_str = '-'.join([group['days'][0], group['days'][-1]]) if len(group['days']) > 1 else group['days'][0]
+        result.append(f"{days_str} {group['hours']}")
+    
+    return '; '.join(result) if result else "не установлен"
+
+
+async def show_setup_complete_message(message: Message, master: Master):
+    """Show completion message after onboarding."""
+    link_client = build_webapp_link(master)
+    link_master = build_master_webapp_link(master)
+    
+    # Seed default services if needed
+    async with async_session_maker() as session:
+        await ensure_default_services(session, master)
+    
+    schedule_str = format_work_schedule(master.work_schedule)
+    
+    text = (
+        "✅ <b>Профиль настроен! Можно работать!</b>\n\n"
+        "📋 <b>Ваши настройки:</b>\n"
+        f"• Город: {master.city}\n"
+        f"• График: {schedule_str}\n\n"
+        "🔗 <b>Ссылка для клиентов</b> (отправьте им):\n"
+        f"{link_client or 'Укажите BOT_USERNAME в .env'}\n\n"
+        "📱 <b>Команды бота:</b>\n"
+        "• /menu — открыть меню с кнопками WebApp\n"
+        "• /services — список услуг (добавляйте: Название;Цена;ДлительностьМин)\n"
+        "• /appointments — записи на сегодня\n"
+        "• /clients — список клиентов\n"
+        "• /schedule — изменить график работы\n"
+        "• /city — изменить город/таймзону\n"
+    )
+    await message.answer(text)
+    
+    # Set chat menu WebApp button
+    try:
+        master_url = build_master_webapp_link(master)
+        if master_url:
+            await bot.set_chat_menu_button(
+                chat_id=message.chat.id,
+                menu_button=MenuButtonWebApp(text="Кабинет", web_app=WebAppInfo(url=master_url))
+            )
+    except Exception:
+        pass
+    
+    # Register bot commands
+    try:
+        await bot.set_my_commands(commands=[
+            BotCommand(command="start", description="Приветствие и ссылки"),
+            BotCommand(command="menu", description="Кнопки WebApp"),
+            BotCommand(command="services", description="Список услуг"),
+            BotCommand(command="appointments", description="Записи на сегодня"),
+            BotCommand(command="clients", description="Список клиентов"),
+            BotCommand(command="schedule", description="График работы"),
+            BotCommand(command="city", description="Выбрать город/таймзону"),
+        ], scope=BotCommandScopeChat(chat_id=message.chat.id))
+    except Exception:
+        pass
 
 
 @dp.callback_query(F.data.startswith("complete_appt:"))
@@ -832,6 +1036,7 @@ async def health(_):
 @routes.get("/api/master/appointments")
 async def api_master_appointments(request: web.Request):
     mid = request.query.get("mid")
+    date_str = request.query.get("date")  # Optional YYYY-MM-DD
     if not mid:
         return web.json_response({"error": "mid required"}, status=400)
     async with async_session_maker() as session:
@@ -843,24 +1048,34 @@ async def api_master_appointments(request: web.Request):
         if not master:
             return web.json_response({"error": "master not found"}, status=404)
         tz = pytz_timezone(master.timezone or "Europe/Moscow")
-        # Today in master's local tz
-        now_local = datetime.now(timezone.utc).astimezone(tz)
-        start_local = tz.localize(datetime(now_local.year, now_local.month, now_local.day, 0, 0))
+        
+        # Determine target date
+        if date_str:
+            # Date comes as YYYY-MM-DD from frontend
+            # Interpret it in master's timezone (not UTC)
+            try:
+                year, month, day = map(int, date_str.split('-'))
+                # Create date at midnight in master's local timezone
+                target_date = tz.localize(datetime(year, month, day, 0, 0))
+            except Exception as e:
+                return web.json_response({"error": f"invalid date format, use YYYY-MM-DD: {str(e)}"}, status=400)
+        else:
+            # Default to today in master's timezone
+            now_local = datetime.now(timezone.utc).astimezone(tz)
+            target_date = tz.localize(datetime(now_local.year, now_local.month, now_local.day, 0, 0))
+        
+        start_local = target_date
         end_local = start_local + timedelta(days=1)
         start_day = start_local.astimezone(timezone.utc).replace(tzinfo=None)
         end_day = end_local.astimezone(timezone.utc).replace(tzinfo=None)
         
-        # Fetch today's appointments + past unprocessed
-        from sqlalchemy import select, or_
+        # Fetch appointments for the selected day
+        from sqlalchemy import select
         from database.models.appointment import Appointment
         stmt = select(Appointment).where(
             Appointment.master_id == master.id,
-            or_(
-                # Today's appointments
-                (Appointment.start_time >= start_day) & (Appointment.start_time < end_day),
-                # Past unprocessed (not completed and not cancelled)
-                (Appointment.start_time < start_day) & (Appointment.is_completed == False) & (Appointment.status.in_(['scheduled', 'confirmed']))
-            )
+            Appointment.start_time >= start_day,
+            Appointment.start_time < end_day
         ).order_by(Appointment.start_time)
         res = await session.execute(stmt)
         apps = res.scalars().all()
@@ -877,7 +1092,7 @@ async def api_master_appointments(request: web.Request):
                 "service": service.name if service else "",
                 "service_id": a.service_id,
                 "service_price": service.price if service else 0,
-                "client": {"name": client.name, "phone": client.phone, "username": client.telegram_username},
+                "client": {"name": client.name, "phone": client.phone, "username": client.telegram_username, "telegram_id": client.telegram_id},
                 "start": start_local.isoformat(),
                 "end": end_local.isoformat(),
                 "status": a.status,
@@ -2163,6 +2378,94 @@ def start_reminder_scheduler():
     reminder_scheduler.start()
     print("📅 Reminder scheduler started (runs every 1 minute)")
     print("⏰ Incomplete appointments checker scheduled (daily at 9:00 AM)")
+
+
+# ========== Text Message Handlers ==========
+
+@dp.message(F.text)
+async def handle_text_message(message: Message):
+    """Handle plain text messages for schedule setup or service adding."""
+    text = message.text.strip()
+    
+    # Check if master exists
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        master = await mrepo.get_by_telegram_id(message.from_user.id)
+        if not master:
+            return  # Ignore messages from non-masters
+        
+        # Check if this looks like a schedule format (contains time ranges)
+        # Format: ПН-ПТ 10:00-19:00; СБ-ВС 10:00-17:00
+        if ':' in text and '-' in text and any(day in text.upper() for day in ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']):
+            # This looks like a schedule, parse it
+            try:
+                was_empty = not master.work_schedule
+                schedule = parse_work_schedule(text)
+                master.work_schedule = schedule
+                await mrepo.update(master)
+                await session.commit()
+                
+                await message.answer("✅ График работы сохранён!")
+                
+                # If city is set but schedule was empty before, this completes onboarding
+                if was_empty and master.city:
+                    updated_master = await mrepo.get_by_telegram_id(message.from_user.id)
+                    await show_setup_complete_message(message, updated_master)
+                return
+            except Exception as e:
+                await message.answer(
+                    f"❌ Не удалось распознать график работы.\n\n"
+                    f"Используйте формат:\n"
+                    f"<code>ПН-ПТ 10:00-19:00; СБ-ВС 10:00-17:00</code>\n\n"
+                    f"Или команду /schedule для базового графика."
+                )
+                return
+        
+        # Check if this looks like a service format (contains semicolons)
+        # Format: Название;Цена;Длительность
+        if ';' in text:
+            parts = [p.strip() for p in text.split(';')]
+            if len(parts) != 3:
+                await message.answer(
+                    "❌ Неверный формат.\n\n"
+                    "Для добавления услуги используйте:\n"
+                    "<code>Название;Цена;ДлительностьМин</code>\n\n"
+                    "Пример: <code>Маникюр;1500;90</code>"
+                )
+                return
+            
+            name, price_str, duration_str = parts
+            try:
+                price = int(price_str)
+                duration = int(duration_str)
+            except ValueError:
+                await message.answer("❌ Цена и длительность должны быть числами.")
+                return
+            
+            if price <= 0 or duration <= 0:
+                await message.answer("❌ Цена и длительность должны быть положительными числами.")
+                return
+            
+            srepo = ServiceRepository(session)
+            service = await srepo.create(master.id, name=name, duration_minutes=duration, price=price)
+            await session.commit()
+            
+            await message.answer(
+                f"✅ Услуга добавлена:\n\n"
+                f"<b>{service.name}</b>\n"
+                f"Цена: {service.price} ₽\n"
+                f"Длительность: {service.duration_minutes} мин"
+            )
+            return
+        
+        # If doesn't match any pattern, show help
+        await message.answer(
+            "ℹ️ Я не понял ваше сообщение.\n\n"
+            "Вы можете:\n"
+            "• Добавить услугу: <code>Название;Цена;ДлительностьМин</code>\n"
+            "• Установить график: <code>ПН-ПТ 10:00-19:00; СБ-ВС 10:00-17:00</code>\n"
+            "• Использовать команды: /start, /menu, /services"
+        )
 
 
 async def main():

@@ -1,12 +1,14 @@
 """Test incomplete appointments checker."""
 import asyncio
 from datetime import datetime, timedelta, timezone
+import pytest
 
 from database import async_session_maker, init_db
 from database.repositories import MasterRepository, ServiceRepository, ClientRepository, AppointmentRepository
 from services.incomplete_checker import notify_masters_incomplete_appointments
 
 
+@pytest.mark.asyncio
 async def test_incomplete_checker():
     """Test incomplete appointments notification."""
     await init_db()
