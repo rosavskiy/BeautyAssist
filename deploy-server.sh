@@ -1,10 +1,11 @@
 #!/bin/bash
 # Deploy Script for BeautyAssist
 # Run this script to deploy updates
+# Usage: cd /var/www/BeautyAssist && bash deploy-server.sh
 
 set -e  # Exit on error
 
-PROJECT_DIR="/root/BeautyAssist"
+PROJECT_DIR="/var/www/BeautyAssist"
 
 echo "🚀 Starting deployment..."
 

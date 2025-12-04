@@ -36,9 +36,13 @@ sudo -u postgres psql -c "CREATE USER beautyassist WITH PASSWORD 'your_secure_pa
 sudo -u postgres psql -c "CREATE DATABASE beautyassist_db OWNER beautyassist;" || true
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE beautyassist_db TO beautyassist;" || true
 
+# Create web directory
+echo "📁 Creating web directory..."
+mkdir -p /var/www
+
 # Clone repository
 echo "📥 Cloning repository..."
-cd /root
+cd /var/www
 if [ -d "BeautyAssist" ]; then
     echo "⚠️ Directory exists, skipping clone"
 else
@@ -74,7 +78,7 @@ PORT=8080
 ADMIN_TELEGRAM_ID=your_telegram_id_here
 EOF
 
-echo "⚠️ IMPORTANT: Edit /root/BeautyAssist/.env and set your real values!"
+echo "⚠️ IMPORTANT: Edit /var/www/BeautyAssist/.env and set your real values!"
 
 # Create systemd service
 echo "⚙️ Creating systemd service..."
@@ -86,9 +90,10 @@ After=network.target postgresql.service
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/BeautyAssist
-Environment="PATH=/root/BeautyAssist/venv/bin"
-ExecStart=/root/BeautyAssist/venv/bin/python /root/BeautyAssist/bot/main.py
+WorkingDirectory=/var/www/BeautyAssist
+Environment="PATH=/var/www/BeautyAssist/venv/bin"
+Environment="PYTHONPATH=/var/www/BeautyAssist"
+ExecStart=/var/www/BeautyAssist/venv/bin/python -m bot.main
 Restart=always
 RestartSec=10
 
@@ -105,12 +110,12 @@ server {
 
     # Static files
     location /webapp/ {
-        alias /root/BeautyAssist/webapp/;
+        alias /var/www/BeautyAssist/webapp/;
         try_files $uri $uri/ =404;
     }
 
     location /webapp-master/ {
-        alias /root/BeautyAssist/webapp-master/;
+        alias /var/www/BeautyAssist/webapp-master/;
         try_files $uri $uri/ =404;
     }
 
@@ -139,9 +144,9 @@ nginx -t
 echo "✅ Server setup complete!"
 echo ""
 echo "📝 Next steps:"
-echo "1. Edit /root/BeautyAssist/.env with your real values"
+echo "1. Edit /var/www/BeautyAssist/.env with your real values"
 echo "2. Update Nginx config: nano /etc/nginx/sites-available/beautyassist"
-echo "3. Run database migrations: cd /root/BeautyAssist && source venv/bin/activate && alembic upgrade head"
+echo "3. Run database migrations: cd /var/www/BeautyAssist && source venv/bin/activate && alembic upgrade head"
 echo "4. Get SSL certificate: certbot --nginx -d your-domain.com"
 echo "5. Start the bot: systemctl start beautyassist-bot"
 echo "6. Enable autostart: systemctl enable beautyassist-bot"
