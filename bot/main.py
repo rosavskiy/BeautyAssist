@@ -1151,6 +1151,67 @@ async def api_master_clients(request: web.Request):
         ])
 
 
+@routes.get("/api/master/client/history")
+async def api_master_client_history(request: web.Request):
+    """Get appointment history for a specific client."""
+    mid = request.query.get("mid")
+    client_id = request.query.get("client_id")
+    if not mid or not client_id:
+        return web.json_response({"error": "mid and client_id required"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        from sqlalchemy import select
+        from database.models.appointment import Appointment
+        from database.models.service import Service
+        from database.models.client import Client
+        
+        # Verify client belongs to this master
+        client_res = await session.execute(
+            select(Client).where(Client.id == int(client_id), Client.master_id == master.id)
+        )
+        client = client_res.scalar_one_or_none()
+        if not client:
+            return web.json_response({"error": "client not found"}, status=404)
+        
+        # Get all appointments for this client, ordered by date (newest first)
+        res = await session.execute(
+            select(Appointment, Service)
+            .join(Service, Appointment.service_id == Service.id)
+            .where(Appointment.client_id == int(client_id))
+            .order_by(Appointment.start_time.desc())
+        )
+        appointments = res.all()
+        
+        history = []
+        for appt, service in appointments:
+            history.append({
+                "id": appt.id,
+                "service_name": service.name,
+                "start_time": appt.start_time.isoformat(),
+                "status": appt.status,
+                "is_completed": appt.is_completed,
+                "payment_amount": appt.payment_amount,
+                "service_price": service.price,
+            })
+        
+        return web.json_response({
+            "client": {
+                "id": client.id,
+                "name": client.name,
+                "phone": client.phone,
+                "username": client.telegram_username,
+                "total_visits": client.total_visits,
+                "total_spent": client.total_spent,
+            },
+            "appointments": history
+        })
+
+
 @routes.get("/api/services")
 async def api_services(request: web.Request):
     code = request.query.get("code")

@@ -111,6 +111,7 @@
     if(ev.target.id === 'settings-close') document.getElementById('settings-section').classList.add('hidden');
     if(ev.target.id === 'open-clients'){ loadClients(); document.getElementById('clients-section').classList.remove('hidden'); }
     if(ev.target.id === 'clients-close') document.getElementById('clients-section').classList.add('hidden');
+    if(ev.target.id === 'client-history-close') document.getElementById('client-history-section').classList.add('hidden');
     if(ev.target.id === 'open-services'){ loadServices(); document.getElementById('settings-section').classList.add('hidden'); document.getElementById('services-section').classList.remove('hidden'); }
     if(ev.target.id === 'services-close') document.getElementById('services-section').classList.add('hidden');
     if(ev.target.id === 'open-finances'){ 
@@ -506,11 +507,95 @@
       if(!data.length){ el.textContent = 'Клиентов пока нет'; return; }
       data.forEach(c => {
         const card = document.createElement('div'); card.className='card';
+        card.style.cursor = 'pointer';
         card.innerHTML = `<div class="row"><div>${c.name}${c.username? ' @'+c.username:''}</div><div>${c.phone}</div></div>
-          <div class="muted">Визитов: ${c.total_visits} • Потрачено: ${c.total_spent}</div>`;
+          <div class="muted">Визитов: ${c.total_visits} • Потрачено: ${c.total_spent} ₽</div>`;
+        card.addEventListener('click', () => openClientHistory(c.id));
         el.appendChild(card);
       });
     } else { el.textContent='Ошибка загрузки'; }
+  }
+
+  async function openClientHistory(clientId){
+    try {
+      const data = await api(`/api/master/client/history?mid=${encodeURIComponent(mid)}&client_id=${clientId}`);
+      if(!data || !data.client){ alert('Не удалось загрузить историю'); return; }
+      
+      const client = data.client;
+      const appointments = data.appointments || [];
+      
+      // Update modal title
+      document.getElementById('client-history-title').textContent = `История: ${client.name}`;
+      
+      // Show client info
+      const infoEl = document.getElementById('client-history-info');
+      infoEl.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+          <div style="font-weight:600">${client.name}</div>
+          <div style="color:#666">${client.phone}</div>
+        </div>
+        <div class="muted">Всего визитов: ${client.total_visits} • Потрачено: ${client.total_spent} ₽</div>
+      `;
+      
+      // Show appointments list
+      const listEl = document.getElementById('client-history-list');
+      listEl.innerHTML = '';
+      
+      if(appointments.length === 0){
+        listEl.innerHTML = '<div class="muted" style="text-align:center; padding:20px">История посещений пуста</div>';
+      } else {
+        appointments.forEach(appt => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          
+          // Format date
+          const dt = new Date(appt.start_time);
+          const dateStr = dt.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit', year:'numeric'});
+          const timeStr = dt.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+          
+          // Status badge
+          let statusBadge = '';
+          let statusColor = '#D0D4DC';
+          if(appt.is_completed){
+            statusBadge = 'Завершена';
+            statusColor = '#4CAF50';
+          } else if(appt.status === 'cancelled'){
+            statusBadge = 'Отменена';
+            statusColor = '#F44336';
+          } else if(appt.status === 'confirmed'){
+            statusBadge = 'Подтверждена';
+            statusColor = '#2196F3';
+          } else {
+            statusBadge = 'Запланирована';
+            statusColor = '#9E9E9E';
+          }
+          
+          // Amount
+          const amount = appt.payment_amount || appt.service_price || 0;
+          
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px">
+              <div>
+                <div style="font-weight:600; margin-bottom:4px">${appt.service_name}</div>
+                <div class="muted">${dateStr} в ${timeStr}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:11px; padding:4px 8px; border-radius:8px; background:${statusColor}; color:white; margin-bottom:4px">${statusBadge}</div>
+                <div style="font-weight:600">${amount} ₽</div>
+              </div>
+            </div>
+          `;
+          
+          listEl.appendChild(card);
+        });
+      }
+      
+      // Open modal
+      document.getElementById('client-history-section').classList.remove('hidden');
+    } catch(e){
+      console.error(e);
+      alert('Ошибка загрузки истории: ' + e.message);
+    }
   }
 
   let currentServiceId = null;
