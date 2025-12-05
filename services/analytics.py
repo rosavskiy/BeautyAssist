@@ -277,7 +277,7 @@ class AnalyticsService:
                 .where(
                     and_(
                         Subscription.status == SubscriptionStatus.ACTIVE.value,
-                        Subscription.plan_name != 'trial'
+                        Subscription.plan != 'trial'
                     )
                 )
             )

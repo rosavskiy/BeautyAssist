@@ -154,7 +154,9 @@ class PromoCodeRepository:
         query = select(PromoCode)
         
         if status:
-            query = query.where(PromoCode.status == status.value)
+            # Handle both string and PromoCodeStatus enum
+            status_value = status.value if hasattr(status, 'value') else status
+            query = query.where(PromoCode.status == status_value)
         
         query = query.order_by(PromoCode.created_at.desc()).limit(limit).offset(offset)
         

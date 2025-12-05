@@ -251,7 +251,7 @@ async def test_funnel_conversion_calculation(db_session):
     for i in range(3):
         await subscription_repo.create(
             master_id=masters[i].id,
-            plan_name="monthly",
+            plan="monthly",
             status=SubscriptionStatus.ACTIVE,
             start_date=datetime.utcnow(),
             end_date=datetime.utcnow() + timedelta(days=30)
