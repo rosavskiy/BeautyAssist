@@ -621,15 +621,20 @@ async def get_master_appointments(request: web.Request):
         mid = request.query.get("mid")
         date_str = request.query.get("date")
         
-        if not mid:
+        if not mid or mid == 'null' or mid == 'undefined':
             return web.json_response({"error": "mid required"}, status=400)
+        
+        try:
+            mid_int = int(mid)
+        except (ValueError, TypeError):
+            return web.json_response({"error": "invalid mid"}, status=400)
         
         async with async_session_maker() as session:
             mrepo = MasterRepository(session)
             srepo = ServiceRepository(session)
             crepo = ClientRepository(session)
             
-            master = await mrepo.get_by_telegram_id(int(mid))
+            master = await mrepo.get_by_telegram_id(mid_int)
             if not master:
                 return web.json_response({"error": "master not found"}, status=404)
             
@@ -939,12 +944,17 @@ async def get_master_clients(request: web.Request):
     """Get list of all clients for a master."""
     try:
         mid = request.query.get("mid")
-        if not mid:
+        if not mid or mid == 'null' or mid == 'undefined':
             return web.json_response({"error": "mid required"}, status=400)
+        
+        try:
+            mid_int = int(mid)
+        except (ValueError, TypeError):
+            return web.json_response({"error": "invalid mid"}, status=400)
         
         async with async_session_maker() as session:
             mrepo = MasterRepository(session)
-            master = await mrepo.get_by_telegram_id(int(mid))
+            master = await mrepo.get_by_telegram_id(mid_int)
             if not master:
                 return web.json_response({"error": "master not found"}, status=404)
             
@@ -1034,14 +1044,19 @@ async def get_master_services(request: web.Request):
     """Get all services for a master."""
     try:
         mid = request.query.get("mid")
-        if not mid:
+        if not mid or mid == 'null' or mid == 'undefined':
             return web.json_response({"error": "mid required"}, status=400)
+        
+        try:
+            mid_int = int(mid)
+        except (ValueError, TypeError):
+            return web.json_response({"error": "invalid mid"}, status=400)
         
         async with async_session_maker() as session:
             mrepo = MasterRepository(session)
             srepo = ServiceRepository(session)
             
-            master = await mrepo.get_by_telegram_id(int(mid))
+            master = await mrepo.get_by_telegram_id(mid_int)
             if not master:
                 return web.json_response({"error": "master not found"}, status=404)
             
