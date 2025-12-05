@@ -1063,8 +1063,10 @@ async def save_master_service(request: web.Request):
     name = data.get("name", "").strip()
     price = data.get("price")
     duration = data.get("duration_minutes")
-    category = data.get("category", "").strip() or None
-    description = data.get("description", "").strip() or None
+    category_raw = data.get("category", "")
+    category = category_raw.strip() if category_raw else None
+    description_raw = data.get("description", "")
+    description = description_raw.strip() if description_raw else None
     
     if not mid or not name or price is None or duration is None:
         return web.json_response({"error": "mid, name, price, duration_minutes required"}, status=400)
