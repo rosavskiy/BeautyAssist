@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Клиенты - BeautyAssist</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="clients.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <a href="/webapp-master/master.html" class="home-btn">🏠</a>
+            <h1>👥 Клиенты</h1>
+        </header>
+
+        <!-- Search -->
+        <div class="search-box">
+            <input 
+                type="text" 
+                id="search-input" 
+                placeholder="🔍 Поиск по имени, телефону..." 
+                class="search-input"
+            >
+        </div>
+
+        <!-- Clients List -->
+        <div id="clients-list" class="clients-list">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Загрузка клиентов...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-icon">👥</div>
+            <h2>Список клиентов пуст</h2>
+            <p>Клиенты появятся здесь после первой записи</p>
+        </div>
+
+        <!-- Client History Modal -->
+        <div id="client-history-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">История клиента</h2>
+                    <button class="close-btn" onclick="closeClientHistory()">&times;</button>
+                </div>
+
+                <!-- Client Info -->
+                <div id="client-info" class="client-info-card"></div>
+
+                <!-- Appointments History -->
+                <div id="appointments-list" class="appointments-list"></div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-toast" class="toast error-toast">
+            <span id="error-message"></span>
+        </div>
+    </div>
+
+    <script src="clients.js"></script>
+</body>
+</html>

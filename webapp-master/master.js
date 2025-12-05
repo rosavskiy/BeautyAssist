@@ -109,9 +109,10 @@
     if(ev.target.id === 'cal-next'){ cal.current = new Date(cal.current.getFullYear(), cal.current.getMonth()+1, 1); renderCalendar(); }
     if(ev.target.id === 'open-settings') document.getElementById('settings-section').classList.remove('hidden');
     if(ev.target.id === 'settings-close') document.getElementById('settings-section').classList.add('hidden');
-    if(ev.target.id === 'open-clients'){ loadClients(); document.getElementById('clients-section').classList.remove('hidden'); }
-    if(ev.target.id === 'clients-close') document.getElementById('clients-section').classList.add('hidden');
-    if(ev.target.id === 'client-history-close') document.getElementById('client-history-section').classList.add('hidden');
+    if(ev.target.id === 'open-clients'){ 
+      const url = `/webapp/master/clients.html?mid=${encodeURIComponent(mid)}`;
+      window.location.href = url;
+    }
     if(ev.target.id === 'open-services'){ 
       const url = `/webapp/master/services.html?mid=${encodeURIComponent(mid)}`;
       window.location.href = url;
