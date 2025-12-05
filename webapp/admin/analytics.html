@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Analytics - BeautyAssist</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="analytics.css">
+</head>
+<body>
+    <div class="analytics-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📊 Аналитика</h1>
+            <button id="refresh-btn" class="btn-refresh">🔄 Обновить</button>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs">
+            <button class="tab active" data-tab="overview">Overview</button>
+            <button class="tab" data-tab="retention">Retention</button>
+            <button class="tab" data-tab="cohorts">Cohorts</button>
+            <button class="tab" data-tab="funnel">Funnel</button>
+        </nav>
+
+        <!-- Overview Tab -->
+        <section id="overview" class="tab-content active">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>👥 DAU</h3>
+                    <p class="value" id="dau-value">-</p>
+                    <span class="label">Daily Active Users</span>
+                </div>
+                <div class="metric-card">
+                    <h3>📅 WAU</h3>
+                    <p class="value" id="wau-value">-</p>
+                    <span class="label">Weekly Active Users</span>
+                </div>
+                <div class="metric-card">
+                    <h3>📆 MAU</h3>
+                    <p class="value" id="mau-value">-</p>
+                    <span class="label">Monthly Active Users</span>
+                </div>
+                <div class="metric-card">
+                    <h3>📈 Growth</h3>
+                    <p class="value" id="growth-value">-</p>
+                    <span class="label">Month-over-month</span>
+                </div>
+                <div class="metric-card">
+                    <h3>✅ Activation</h3>
+                    <p class="value" id="activation-value">-</p>
+                    <span class="label">Onboarded users</span>
+                </div>
+                <div class="metric-card">
+                    <h3>🎯 Conversion</h3>
+                    <p class="value" id="paid-conversion-value">-</p>
+                    <span class="label">Trial → Paid</span>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Retention Overview</h2>
+                <canvas id="retention-overview-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Retention Tab -->
+        <section id="retention" class="tab-content">
+            <div class="info-box">
+                <h2>User Retention</h2>
+                <p>Процент пользователей, вернувшихся через N дней после регистрации</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="retention-chart"></canvas>
+            </div>
+            <div class="retention-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Day 1:</span>
+                    <span class="stat-value" id="day1-retention">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Day 7:</span>
+                    <span class="stat-value" id="day7-retention">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Day 30:</span>
+                    <span class="stat-value" id="day30-retention">-</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cohorts Tab -->
+        <section id="cohorts" class="tab-content">
+            <div class="info-box">
+                <h2>Cohort Analysis</h2>
+                <p>Retention по неделям регистрации</p>
+            </div>
+            <div class="table-container">
+                <table class="cohort-table" id="cohort-table">
+                    <thead>
+                        <tr>
+                            <th>Cohort Week</th>
+                            <th>Registered</th>
+                            <th>Day 0</th>
+                            <th>Day 7</th>
+                            <th>Day 14</th>
+                            <th>Day 30</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cohort-tbody">
+                        <tr>
+                            <td colspan="6" class="loading">Загрузка...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Funnel Tab -->
+        <section id="funnel" class="tab-content">
+            <div class="info-box">
+                <h2>Conversion Funnel</h2>
+                <p>Воронка активации пользователей</p>
+            </div>
+            <div class="funnel-container">
+                <div class="funnel-stage">
+                    <div class="stage-bar" id="registered-bar">
+                        <span class="stage-label">Зарегистрировались</span>
+                        <span class="stage-value" id="registered-value">-</span>
+                    </div>
+                </div>
+                <div class="funnel-stage">
+                    <div class="stage-bar" id="onboarded-bar">
+                        <span class="stage-label">Завершили онбординг</span>
+                        <span class="stage-value" id="onboarded-value">-</span>
+                    </div>
+                </div>
+                <div class="funnel-stage">
+                    <div class="stage-bar" id="first-service-bar">
+                        <span class="stage-label">Создали услугу</span>
+                        <span class="stage-value" id="first-service-value">-</span>
+                    </div>
+                </div>
+                <div class="funnel-stage">
+                    <div class="stage-bar" id="first-booking-bar">
+                        <span class="stage-label">Получили запись</span>
+                        <span class="stage-value" id="first-booking-value">-</span>
+                    </div>
+                </div>
+                <div class="funnel-stage">
+                    <div class="stage-bar" id="paid-bar">
+                        <span class="stage-label">Оплатили подписку</span>
+                        <span class="stage-value" id="paid-value">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="funnel-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Загрузка данных...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-message" class="error-message"></div>
+    </div>
+
+    <script src="analytics.js"></script>
+</body>
+</html>

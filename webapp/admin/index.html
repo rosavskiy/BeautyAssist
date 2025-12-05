@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirect to Analytics</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .message {
+            margin: 20px 0;
+            font-size: 16px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            margin: 10px;
+        }
+        .loading {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Analytics Dashboard</h1>
+        <div class="message">
+            <p>Загрузка...</p>
+            <div class="loading">⏳</div>
+        </div>
+        <a href="#" class="btn" id="openBtn" style="display:none;">Открыть Dashboard</a>
+        <div id="error" style="display:none; color: red; margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Пытаемся открыть dashboard напрямую
+        const dashboardUrl = window.location.origin + '/webapp/admin/analytics.html';
+        
+        // Проверяем доступность
+        fetch(dashboardUrl, {
+            headers: {
+                'ngrok-skip-browser-warning': 'true'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Перенаправляем
+                window.location.href = dashboardUrl;
+            } else {
+                showError('Ошибка загрузки: ' + response.status);
+            }
+        })
+        .catch(error => {
+            showError('Не удалось подключиться к серверу');
+            document.getElementById('openBtn').style.display = 'inline-block';
+            document.getElementById('openBtn').href = dashboardUrl;
+        });
+
+        function showError(message) {
+            document.querySelector('.message p').textContent = message;
+            document.querySelector('.loading').style.display = 'none';
+            document.getElementById('error').textContent = 'Попробуйте открыть вручную';
+            document.getElementById('error').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

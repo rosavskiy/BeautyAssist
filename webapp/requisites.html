@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реквизиты - BeautyAssist</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            align-items: flex-start;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 14px;
+            flex-shrink: 0;
+            margin-right: 20px;
+        }
+
+        .info-value {
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .contact-links {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+            text-align: center;
+        }
+
+        .contact-links a {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .contact-links a:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .info-row {
+                flex-direction: column;
+            }
+
+            .info-value {
+                text-align: left;
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 Реквизиты</h1>
+        <p class="subtitle">BeautyAssist - Система управления салоном красоты</p>
+
+        <div class="section">
+            <div class="section-title">Информация о компании</div>
+            <div class="info-row">
+                <span class="info-label">Наименование:</span>
+                <span class="info-value">ИП Иванов Иван Иванович</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">ИНН:</span>
+                <span class="info-value">123456789012</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">ОГРНИП:</span>
+                <span class="info-value">123456789012345</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Юридический адрес</div>
+            <div class="info-row">
+                <span class="info-label">Адрес:</span>
+                <span class="info-value">г. Москва, ул. Примерная, д. 1, офис 1</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Банковские реквизиты</div>
+            <div class="info-row">
+                <span class="info-label">Банк:</span>
+                <span class="info-value">ПАО Сбербанк</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Расчётный счёт:</span>
+                <span class="info-value">40802810000000000000</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Корр. счёт:</span>
+                <span class="info-value">30101810400000000225</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">БИК:</span>
+                <span class="info-value">044525225</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Контактная информация</div>
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">support@beautyassist.ru</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Телефон:</span>
+                <span class="info-value">+7 (999) 123-45-67</span>
+            </div>
+        </div>
+
+        <div class="contact-links">
+            <a href="https://t.me/your_bot">📱 Открыть бота</a>
+        </div>
+
+        <div class="footer">
+            © 2025 BeautyAssist. Все права защищены.
+        </div>
+    </div>
+</body>
+</html>

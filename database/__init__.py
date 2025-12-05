@@ -1,5 +1,5 @@
 """Database package initialization."""
-from database.base import Base, engine, async_session_maker, get_db, init_db, close_db
+from database.base import Base, engine, async_session_maker, get_db, DBSession, init_db, close_db
 from database.models import (
     Master,
     Client,
@@ -21,6 +21,7 @@ __all__ = [
     "engine",
     "async_session_maker",
     "get_db",
+    "DBSession",
     "init_db",
     "close_db",
     "Master",

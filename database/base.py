@@ -43,6 +43,26 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+class DBSession:
+    """Context manager wrapper for get_db()."""
+    
+    def __init__(self):
+        self._gen = None
+        self._session = None
+    
+    async def __aenter__(self) -> AsyncSession:
+        self._gen = get_db()
+        self._session = await self._gen.__anext__()
+        return self._session
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._gen:
+            try:
+                await self._gen.__anext__()
+            except StopAsyncIteration:
+                pass
+
+
 async def init_db():
     """Initialize database - create all tables."""
     async with engine.begin() as conn:

@@ -5,6 +5,8 @@ from database.repositories.service import ServiceRepository
 from database.repositories.appointment import AppointmentRepository
 from database.repositories.reminder import ReminderRepository
 from database.repositories.expense import ExpenseRepository
+from database.repositories.subscription import SubscriptionRepository
+from database.repositories.referral import ReferralRepository
 
 __all__ = [
     "MasterRepository",
@@ -13,4 +15,6 @@ __all__ = [
     "AppointmentRepository",
     "ReminderRepository",
     "ExpenseRepository",
+    "SubscriptionRepository",
+    "ReferralRepository",
 ]

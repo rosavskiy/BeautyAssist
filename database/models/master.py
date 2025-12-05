@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from database.models.service import Service
     from database.models.client import Client
     from database.models.appointment import Appointment
+    from database.models.referral import Referral
 
 
 class Master(Base):
@@ -72,6 +73,18 @@ class Master(Base):
         "Appointment",
         back_populates="master",
         cascade="all, delete-orphan"
+    )
+    referrals_given: Mapped[list["Referral"]] = relationship(
+        "Referral",
+        foreign_keys="Referral.referrer_id",
+        back_populates="referrer",
+        cascade="all, delete-orphan"
+    )
+    referral_received: Mapped["Referral | None"] = relationship(
+        "Referral",
+        foreign_keys="Referral.referred_id",
+        back_populates="referred",
+        uselist=False
     )
     
     def __repr__(self) -> str:

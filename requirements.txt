@@ -18,3 +18,6 @@ redis==5.2.0
 
 # Utilities
 phonenumbers==8.13.50
+
+# Payment providers (Telegram Stars only, YooKassa kept for future)
+yookassa==3.6.0

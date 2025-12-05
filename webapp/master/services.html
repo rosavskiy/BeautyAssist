@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои услуги - BeautyAssist</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="master.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🛠 Мои услуги</h1>
+            <button id="add-service-btn" class="btn-primary">+ Добавить услугу</button>
+        </header>
+
+        <!-- Services List -->
+        <div id="services-list" class="services-list">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Загрузка услуг...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-icon">📋</div>
+            <h2>У вас пока нет услуг</h2>
+            <p>Добавьте первую услугу, чтобы клиенты могли записаться к вам</p>
+            <button class="btn-primary" onclick="openServiceModal()">+ Добавить услугу</button>
+        </div>
+
+        <!-- Service Modal -->
+        <div id="service-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">Добавить услугу</h2>
+                    <button class="close-btn" onclick="closeServiceModal()">&times;</button>
+                </div>
+                
+                <form id="service-form">
+                    <input type="hidden" id="service-id">
+                    
+                    <div class="form-group">
+                        <label for="service-name">Название услуги *</label>
+                        <input 
+                            type="text" 
+                            id="service-name" 
+                            placeholder="Например: Маникюр" 
+                            required
+                            maxlength="100"
+                        >
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="service-duration">Длительность (мин) *</label>
+                            <input 
+                                type="number" 
+                                id="service-duration" 
+                                placeholder="60" 
+                                required
+                                min="15"
+                                max="480"
+                                step="15"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="service-price">Цена (₽) *</label>
+                            <input 
+                                type="number" 
+                                id="service-price" 
+                                placeholder="1000" 
+                                required
+                                min="0"
+                                max="999999"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="service-category">Категория</label>
+                        <select id="service-category">
+                            <option value="">Без категории</option>
+                            <option value="Ногти">Ногти</option>
+                            <option value="Брови и ресницы">Брови и ресницы</option>
+                            <option value="Волосы">Волосы</option>
+                            <option value="Макияж">Макияж</option>
+                            <option value="Массаж">Массаж</option>
+                            <option value="Косметология">Косметология</option>
+                            <option value="Другое">Другое</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="service-description">Описание</label>
+                        <textarea 
+                            id="service-description" 
+                            placeholder="Дополнительная информация об услуге (необязательно)"
+                            maxlength="500"
+                            rows="3"
+                        ></textarea>
+                        <span class="char-counter">0/500</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary" id="save-btn">
+                            <span class="btn-text">Сохранить</span>
+                            <span class="btn-loading" style="display: none;">
+                                <span class="spinner-small"></span>
+                                Сохранение...
+                            </span>
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="closeServiceModal()">
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-modal" class="modal">
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h2>Удалить услугу?</h2>
+                </div>
+                
+                <p class="delete-warning">
+                    Вы уверены, что хотите удалить услугу "<span id="delete-service-name"></span>"?
+                    Это действие нельзя отменить.
+                </p>
+
+                <div class="form-actions">
+                    <button class="btn-danger" onclick="confirmDelete()">
+                        Удалить
+                    </button>
+                    <button class="btn-secondary" onclick="closeDeleteModal()">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-toast" class="toast error-toast">
+            <span id="error-message"></span>
+        </div>
+
+        <!-- Success Message -->
+        <div id="success-toast" class="toast success-toast">
+            <span id="success-message"></span>
+        </div>
+    </div>
+
+    <script src="services.js"></script>
+</body>
+</html>

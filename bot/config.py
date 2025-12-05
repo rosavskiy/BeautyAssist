@@ -1,6 +1,7 @@
 """Configuration management using pydantic-settings."""
 import os
-from pydantic import Field, PostgresDsn, AnyUrl
+from typing import Any
+from pydantic import Field, PostgresDsn, AnyUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,6 +41,26 @@ class Settings(BaseSettings):
     debug: bool = Field(False, description="Debug mode")
     log_level: str = Field("INFO", description="Logging level")
     
+    # Admin (can be comma-separated string or list)
+    admin_telegram_ids: str | list[int] = Field(
+        default="",
+        description="Admin Telegram IDs (comma-separated in env)"
+    )
+    
+    @field_validator("admin_telegram_ids", mode="before")
+    @classmethod
+    def parse_admin_ids(cls, v: Any) -> list[int]:
+        """Parse admin telegram IDs from string or list."""
+        if isinstance(v, list):
+            return [int(x) for x in v]
+        if isinstance(v, str):
+            if not v or not v.strip():
+                return []
+            return [int(x.strip()) for x in v.split(",") if x.strip()]
+        if isinstance(v, int):
+            return [v]
+        return []
+    
     # Features
     enable_sms_notifications: bool = Field(False, description="Enable SMS notifications")
     sms_provider_api_key: str | None = Field(None, description="SMS provider API key")
@@ -50,11 +71,26 @@ class Settings(BaseSettings):
     free_max_services: int = Field(20, description="Max services for free plan")
     free_max_appointments_per_month: int = Field(15, description="Max appointments per month for free")
     
-    # Payment (future)
-    payment_provider: str | None = Field(None, description="Payment provider name")
-    payment_api_key: str | None = Field(None, description="Payment API key")
-    subscription_price_rub: int = Field(490, description="Subscription price in RUB")
+    # Payment providers
+    yookassa_shop_id: str | None = Field(None, description="YooKassa shop ID")
+    yookassa_secret_key: str | None = Field(None, description="YooKassa secret key")
+    yookassa_return_url: str | None = Field(None, description="YooKassa return URL after payment")
 
 
 # Global settings instance
 settings = Settings()
+
+# Bot username constant for referral links
+BOT_USERNAME = settings.bot_username
+
+# City to timezone mapping
+CITY_TZ_MAP = {
+    "Москва": "Europe/Moscow",
+    "Санкт-Петербург": "Europe/Moscow",
+    "Екатеринбург": "Asia/Yekaterinburg",
+    "Новосибирск": "Asia/Novosibirsk",
+    "Красноярск": "Asia/Krasnoyarsk",
+    "Владивосток": "Asia/Vladivostok",
+    "Самара": "Europe/Samara",
+    "Саратов": "Europe/Saratov",
+}
