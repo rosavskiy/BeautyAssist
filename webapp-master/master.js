@@ -28,6 +28,10 @@
     renderCalendar();
   }
   function openCalendarDayOffMode(){
+    if (!mid) {
+      alert('Ошибка: ID мастера не определен');
+      return;
+    }
     try {
       document.getElementById('settings-section').classList.add('hidden');
       cal.onDatePick = null;
