@@ -1,8 +1,14 @@
 (function(){
   const tg = window.Telegram?.WebApp; tg && tg.expand();
   const qs = new URLSearchParams(window.location.search);
-  const mid = qs.get('mid');
+  const mid = qs.get('mid') || tg?.initDataUnsafe?.user?.id;
   const status = (msg, err) => console.log(msg || (err||''));
+
+  if (!mid) {
+    alert('Ошибка: не удалось определить мастера. Откройте кабинет через команду /menu в боте.');
+    document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h2>❌ Ошибка</h2><p>Откройте кабинет через команду /menu в боте</p></div>';
+    return;
+  }
 
   async function api(path){ 
     try {
