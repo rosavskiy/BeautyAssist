@@ -46,6 +46,11 @@ class ThrottlingMiddleware(BaseMiddleware):
             return await handler(event, data)
         
         user_id = event.from_user.id
+        
+        # Skip throttling for admins
+        if user_id in settings.admin_telegram_ids:
+            return await handler(event, data)
+        
         key = f"throttle:bot:{user_id}"
         
         try:
