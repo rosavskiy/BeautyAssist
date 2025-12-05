@@ -625,72 +625,72 @@ async def get_master_appointments(request: web.Request):
             return web.json_response({"error": "mid required"}, status=400)
         
         async with async_session_maker() as session:
-        mrepo = MasterRepository(session)
-        srepo = ServiceRepository(session)
-        crepo = ClientRepository(session)
-        
-        master = await mrepo.get_by_telegram_id(int(mid))
-        if not master:
-            return web.json_response({"error": "master not found"}, status=404)
-        
-        tz = pytz_timezone(master.timezone or "Europe/Moscow")
-        
-        # Determine target date
-        if date_str:
-            try:
-                year, month, day = map(int, date_str.split('-'))
-                target_date = tz.localize(datetime(year, month, day, 0, 0))
-            except Exception as e:
-                return web.json_response({"error": f"invalid date format: {str(e)}"}, status=400)
-        else:
-            now_local = datetime.now(timezone.utc).astimezone(tz)
-            target_date = tz.localize(datetime(now_local.year, now_local.month, now_local.day, 0, 0))
-        
-        start_local = target_date
-        end_local = start_local + timedelta(days=1)
-        start_day = start_local.astimezone(timezone.utc).replace(tzinfo=None)
-        end_day = end_local.astimezone(timezone.utc).replace(tzinfo=None)
-        
-        stmt = select(Appointment).where(
-            Appointment.master_id == master.id,
-            Appointment.start_time >= start_day,
-            Appointment.start_time < end_day
-        ).order_by(Appointment.start_time)
-        
-        res = await session.execute(stmt)
-        apps = res.scalars().all()
-        
-        result = []
-        for a in apps:
-            service = await srepo.get_by_id(a.service_id)
-            client = await crepo.get_by_id(a.client_id)
-            start_local = a.start_time.replace(tzinfo=timezone.utc).astimezone(tz)
-            end_local = a.end_time.replace(tzinfo=timezone.utc).astimezone(tz)
-            is_past = a.start_time.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
+            mrepo = MasterRepository(session)
+            srepo = ServiceRepository(session)
+            crepo = ClientRepository(session)
             
-            result.append({
-                "id": a.id,
-                "service": service.name if service else "",
-                "service_id": a.service_id,
-                "service_price": service.price if service else 0,
-                "client": {
-                    "name": client.name,
-                    "phone": client.phone,
-                    "username": client.telegram_username,
-                    "telegram_id": client.telegram_id
-                },
-                "start": start_local.isoformat(),
-                "end": end_local.isoformat(),
-                "status": a.status,
-                "is_completed": a.is_completed,
-                "is_past": is_past
+            master = await mrepo.get_by_telegram_id(int(mid))
+            if not master:
+                return web.json_response({"error": "master not found"}, status=404)
+            
+            tz = pytz_timezone(master.timezone or "Europe/Moscow")
+            
+            # Determine target date
+            if date_str:
+                try:
+                    year, month, day = map(int, date_str.split('-'))
+                    target_date = tz.localize(datetime(year, month, day, 0, 0))
+                except Exception as e:
+                    return web.json_response({"error": f"invalid date format: {str(e)}"}, status=400)
+            else:
+                now_local = datetime.now(timezone.utc).astimezone(tz)
+                target_date = tz.localize(datetime(now_local.year, now_local.month, now_local.day, 0, 0))
+            
+            start_local = target_date
+            end_local = start_local + timedelta(days=1)
+            start_day = start_local.astimezone(timezone.utc).replace(tzinfo=None)
+            end_day = end_local.astimezone(timezone.utc).replace(tzinfo=None)
+            
+            stmt = select(Appointment).where(
+                Appointment.master_id == master.id,
+                Appointment.start_time >= start_day,
+                Appointment.start_time < end_day
+            ).order_by(Appointment.start_time)
+            
+            res = await session.execute(stmt)
+            apps = res.scalars().all()
+            
+            result = []
+            for a in apps:
+                service = await srepo.get_by_id(a.service_id)
+                client = await crepo.get_by_id(a.client_id)
+                start_local = a.start_time.replace(tzinfo=timezone.utc).astimezone(tz)
+                end_local = a.end_time.replace(tzinfo=timezone.utc).astimezone(tz)
+                is_past = a.start_time.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
+                
+                result.append({
+                    "id": a.id,
+                    "service": service.name if service else "",
+                    "service_id": a.service_id,
+                    "service_price": service.price if service else 0,
+                    "client": {
+                        "name": client.name,
+                        "phone": client.phone,
+                        "username": client.telegram_username,
+                        "telegram_id": client.telegram_id
+                    },
+                    "start": start_local.isoformat(),
+                    "end": end_local.isoformat(),
+                    "status": a.status,
+                    "is_completed": a.is_completed,
+                    "is_past": is_past
+                })
+            
+            return web.json_response({
+                "referral_code": master.referral_code,
+                "appointments": result,
+                "work_schedule": master.work_schedule or {}
             })
-        
-        return web.json_response({
-            "referral_code": master.referral_code,
-            "appointments": result,
-            "work_schedule": master.work_schedule or {}
-        })
     except Exception as e:
         logger.error(f"Error in get_master_appointments: {e}", exc_info=True)
         return web.json_response({"error": str(e)}, status=500)
@@ -943,28 +943,28 @@ async def get_master_clients(request: web.Request):
             return web.json_response({"error": "mid required"}, status=400)
         
         async with async_session_maker() as session:
-        mrepo = MasterRepository(session)
-        master = await mrepo.get_by_telegram_id(int(mid))
-        if not master:
-            return web.json_response({"error": "master not found"}, status=404)
-        
-        res = await session.execute(
-            select(Client).where(Client.master_id == master.id).order_by(Client.name)
-        )
-        clients = res.scalars().all()
-        
-        return web.json_response([
-            {
-                "id": c.id,
-                "name": c.name,
-                "phone": c.phone,
-                "username": c.telegram_username,
-                "last_visit": c.last_visit.isoformat() if c.last_visit else None,
-                "total_visits": c.total_visits,
-                "total_spent": c.total_spent,
-            }
-            for c in clients
-        ])
+            mrepo = MasterRepository(session)
+            master = await mrepo.get_by_telegram_id(int(mid))
+            if not master:
+                return web.json_response({"error": "master not found"}, status=404)
+            
+            res = await session.execute(
+                select(Client).where(Client.master_id == master.id).order_by(Client.name)
+            )
+            clients = res.scalars().all()
+            
+            return web.json_response([
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "phone": c.phone,
+                    "username": c.telegram_username,
+                    "last_visit": c.last_visit.isoformat() if c.last_visit else None,
+                    "total_visits": c.total_visits,
+                    "total_spent": c.total_spent,
+                }
+                for c in clients
+            ])
     except Exception as e:
         logger.error(f"Error in get_master_clients: {e}", exc_info=True)
         return web.json_response({"error": str(e)}, status=500)
@@ -1038,26 +1038,26 @@ async def get_master_services(request: web.Request):
             return web.json_response({"error": "mid required"}, status=400)
         
         async with async_session_maker() as session:
-        mrepo = MasterRepository(session)
-        srepo = ServiceRepository(session)
-        
-        master = await mrepo.get_by_telegram_id(int(mid))
-        if not master:
-            return web.json_response({"error": "master not found"}, status=404)
-        
-        services = await srepo.get_all_by_master(master.id, active_only=False)
-        return web.json_response([
-            {
-                "id": s.id,
-                "name": s.name,
-                "price": s.price,
-                "duration_minutes": s.duration_minutes,
-                "category": s.category if hasattr(s, 'category') else None,
-                "description": s.description if hasattr(s, 'description') else None,
-                "is_active": s.is_active
-            }
-            for s in services
-        ])
+            mrepo = MasterRepository(session)
+            srepo = ServiceRepository(session)
+            
+            master = await mrepo.get_by_telegram_id(int(mid))
+            if not master:
+                return web.json_response({"error": "master not found"}, status=404)
+            
+            services = await srepo.get_all_by_master(master.id, active_only=False)
+            return web.json_response([
+                {
+                    "id": s.id,
+                    "name": s.name,
+                    "price": s.price,
+                    "duration_minutes": s.duration_minutes,
+                    "category": s.category if hasattr(s, 'category') else None,
+                    "description": s.description if hasattr(s, 'description') else None,
+                    "is_active": s.is_active
+                }
+                for s in services
+            ])
     except Exception as e:
         logger.error(f"Error in get_master_services: {e}", exc_info=True)
         return web.json_response({"error": str(e)}, status=500)
