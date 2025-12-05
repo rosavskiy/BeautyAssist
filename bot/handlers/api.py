@@ -1094,6 +1094,7 @@ async def save_master_service(request: web.Request):
     category = category_raw.strip() if category_raw else None
     description_raw = data.get("description", "")
     description = description_raw.strip() if description_raw else None
+    is_active = data.get("is_active", True)
     
     if not mid or not name or price is None or duration is None:
         return web.json_response({"error": "mid, name, price, duration_minutes required"}, status=400)
@@ -1127,6 +1128,7 @@ async def save_master_service(request: web.Request):
             service.duration_minutes = duration
             service.category = category
             service.description = description
+            service.is_active = is_active
         else:
             # Create new
             service = Service(
@@ -1136,7 +1138,7 @@ async def save_master_service(request: web.Request):
                 duration_minutes=duration,
                 category=category,
                 description=description,
-                is_active=True
+                is_active=is_active
             )
             session.add(service)
         
