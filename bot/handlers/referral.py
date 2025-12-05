@@ -4,6 +4,7 @@ import logging
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.exceptions import TelegramBadRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.base import async_session_maker
@@ -113,12 +114,19 @@ async def callback_refresh_stats(callback_query):
             ]
         ])
         
-        await callback_query.message.edit_text(
-            text,
-            reply_markup=keyboard,
-            parse_mode="HTML"
-        )
-        await callback_query.answer("✅ Статистика обновлена")
+        try:
+            await callback_query.message.edit_text(
+                text,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+            await callback_query.answer("✅ Статистика обновлена")
+        except TelegramBadRequest as e:
+            if "message is not modified" in str(e):
+                # Data hasn't changed, just acknowledge the callback
+                await callback_query.answer("📊 Статистика актуальна", show_alert=False)
+            else:
+                raise
 
 
 def register_handlers(dp):
