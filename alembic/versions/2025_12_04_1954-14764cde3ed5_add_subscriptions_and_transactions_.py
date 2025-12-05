@@ -42,33 +42,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_subscriptions_end_date'), 'subscriptions', ['end_date'], unique=False)
     op.create_index(op.f('ix_subscriptions_master_id'), 'subscriptions', ['master_id'], unique=False)
     op.create_index(op.f('ix_subscriptions_status'), 'subscriptions', ['status'], unique=False)
-    op.create_table('appointments',
-    sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
-    sa.Column('master_id', sa.BigInteger(), nullable=False),
-    sa.Column('client_id', sa.BigInteger(), nullable=False),
-    sa.Column('service_id', sa.BigInteger(), nullable=False),
-    sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('end_time', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('status', sa.String(length=20), nullable=False),
-    sa.Column('comment', sa.Text(), nullable=True),
-    sa.Column('client_comment', sa.Text(), nullable=True),
-    sa.Column('cancellation_reason', sa.String(length=500), nullable=True),
-    sa.Column('is_completed', sa.Boolean(), nullable=False),
-    sa.Column('payment_amount', sa.Integer(), nullable=True, comment='Actual payment received'),
-    sa.Column('rescheduled_from_id', sa.BigInteger(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['client_id'], ['clients.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['master_id'], ['masters.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['rescheduled_from_id'], ['appointments.id'], ondelete='SET NULL'),
-    sa.ForeignKeyConstraint(['service_id'], ['services.id'], ondelete='RESTRICT'),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_appointments_client_id'), 'appointments', ['client_id'], unique=False)
-    op.create_index(op.f('ix_appointments_master_id'), 'appointments', ['master_id'], unique=False)
-    op.create_index(op.f('ix_appointments_service_id'), 'appointments', ['service_id'], unique=False)
-    op.create_index(op.f('ix_appointments_start_time'), 'appointments', ['start_time'], unique=False)
-    op.create_index(op.f('ix_appointments_status'), 'appointments', ['status'], unique=False)
     op.create_table('transactions',
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('subscription_id', sa.BigInteger(), nullable=True),
