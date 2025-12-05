@@ -5,11 +5,18 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """Get main menu keyboard for master."""
+    from aiogram.types import WebAppInfo
+    from bot.config import settings
+    
     builder = InlineKeyboardBuilder()
+    
+    # Prepare WebApp URL for services catalog
+    base_url = str(settings.webapp_base_url) if settings.webapp_base_url else "http://localhost:8080"
+    services_url = f"{base_url}/webapp/master/services.html"
     
     builder.row(
         InlineKeyboardButton(text="📋 Записи", callback_data="master:appointments"),
-        InlineKeyboardButton(text="💅 Услуги", callback_data="master:services")
+        InlineKeyboardButton(text="📚 Каталог услуг", web_app=WebAppInfo(url=services_url))
     )
     builder.row(
         InlineKeyboardButton(text="👥 Клиенты", callback_data="master:clients"),

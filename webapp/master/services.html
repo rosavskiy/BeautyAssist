@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мои услуги - BeautyAssist</title>
+    <title>Каталог услуг - BeautyAssist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="services.css">
 </head>
@@ -11,7 +11,8 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>🛠 Мои услуги</h1>
+            <a href="../index.html" class="home-btn">🏠</a>
+            <h1>📚 Каталог услуг</h1>
             <button id="add-service-btn" class="btn-primary">+ Добавить услугу</button>
         </header>
 
@@ -26,8 +27,8 @@
         <!-- Empty State -->
         <div id="empty-state" class="empty-state" style="display: none;">
             <div class="empty-icon">📋</div>
-            <h2>У вас пока нет услуг</h2>
-            <p>Добавьте первую услугу, чтобы клиенты могли записаться к вам</p>
+            <h2>Каталог услуг пуст</h2>
+            <p>Добавьте первую услугу в каталог, чтобы клиенты могли записаться к вам</p>
             <button class="btn-primary" onclick="openServiceModal()">+ Добавить услугу</button>
         </div>
 
