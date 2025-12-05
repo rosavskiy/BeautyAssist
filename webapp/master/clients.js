@@ -12,12 +12,16 @@ function getMasterId() {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Clients page loaded');
     tg.ready();
     tg.expand();
     
     // Get master ID
     mid = getMasterId();
+    console.log('Master ID:', mid);
+    
     if (!mid) {
+        console.error('Master ID not found');
         showError('Не удалось определить мастера');
         return;
     }
@@ -43,13 +47,17 @@ function setupSearch() {
 
 // Load Clients from API
 async function loadClients() {
+    console.log('Loading clients for mid:', mid);
     try {
         if (!mid) {
             showError('Не удалось получить ID мастера');
             return;
         }
 
-        const response = await fetch(`/api/master/clients?mid=${mid}`);
+        const url = `/api/master/clients?mid=${mid}`;
+        console.log('Fetching clients from:', url);
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error('Ошибка загрузки клиентов');
