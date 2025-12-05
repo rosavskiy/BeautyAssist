@@ -13,8 +13,6 @@ from database.repositories.appointment import AppointmentRepository
 from database.repositories.client import ClientRepository
 from database.models.appointment import AppointmentStatus
 from bot.config import settings, CITY_TZ_MAP
-from sqlalchemy import select
-from database.models.client import Client
 
 router = Router(name="master")
 
@@ -61,7 +59,7 @@ async def cmd_services(message: Message):
         
         # Use webapp_base_url from settings or fallback to localhost for development
         base_url = str(settings.webapp_base_url) if settings.webapp_base_url else "http://localhost:8080"
-        webapp_url = f"{base_url}/webapp/master/services.html"
+        webapp_url = f"{base_url}/webapp/master/services.html?mid={master.id}"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
@@ -112,21 +110,30 @@ async def cmd_appointments(message: Message):
 
 @router.message(Command("clients"))
 async def cmd_clients(message: Message):
-    """List all clients for the master."""
+    """Open clients management Mini App."""
     async with async_session_maker() as session:
-        mrepo = MasterRepository(session)
-        master = await mrepo.get_by_telegram_id(message.from_user.id)
+        master = await MasterRepository(session).get_by_telegram_id(message.from_user.id)
         if not master:
             return await message.answer("Нажмите /start для регистрации")
-        res = await session.execute(select(Client).where(Client.master_id == master.id).order_by(Client.name))
-        clients = res.scalars().all()
-        if not clients:
-            return await message.answer("Клиенты пока не добавлены")
-        lines = [f"Клиенты ({len(clients)}):"]
-        for c in clients[:200]:
-            tg = f" @{c.telegram_username}" if c.telegram_username else ""
-            lines.append(f"- {c.name}{tg} — {c.phone}")
-        await message.answer("\n".join(lines))
+        
+        # Create WebApp button
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+        
+        # Use webapp_base_url from settings or fallback to localhost for development
+        base_url = str(settings.webapp_base_url) if settings.webapp_base_url else "http://localhost:8080"
+        webapp_url = f"{base_url}/webapp/master/clients.html?mid={master.id}"
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="👥 Управление клиентами",
+                web_app=WebAppInfo(url=webapp_url)
+            )]
+        ])
+        
+        await message.answer(
+            "Управляйте вашими контактами через удобный интерфейс 👇",
+            reply_markup=keyboard
+        )
 
 
 @router.message(Command("schedule"))
