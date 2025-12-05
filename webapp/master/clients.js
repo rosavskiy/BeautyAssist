@@ -1,5 +1,5 @@
 // Clients Management JavaScript
-let tg = window.Telegram.WebApp;
+let tg = window.Telegram?.WebApp;
 let clients = [];
 let mid = null;
 let currentClientId = null;
@@ -7,14 +7,27 @@ let currentClientId = null;
 // Get master ID from URL params
 function getMasterId() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('mid') || tg.initDataUnsafe?.user?.id;
+    const midFromUrl = params.get('mid');
+    const midFromTg = tg?.initDataUnsafe?.user?.id;
+    
+    console.log('getMasterId - URL param:', midFromUrl);
+    console.log('getMasterId - Telegram WebApp:', midFromTg);
+    
+    // Prefer URL parameter, fallback to Telegram
+    const result = midFromUrl || midFromTg;
+    console.log('getMasterId - final result:', result);
+    return result;
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Clients page loaded');
-    tg.ready();
-    tg.expand();
+    console.log('Telegram WebApp available:', !!tg);
+    
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
     
     // Get master ID
     mid = getMasterId();
@@ -22,13 +35,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (!mid) {
         console.error('Master ID not found');
-        showError('Не удалось определить мастера');
+        showError('Не удалось определить мастера. Откройте эту страницу через команду /clients в боте.');
+        document.getElementById('clients-list').innerHTML = `
+            <div class="error-state">
+                <p style="text-align: center; padding: 20px;">
+                    ❌ Не удалось определить мастера<br><br>
+                    Откройте эту страницу через команду <strong>/clients</strong> в боте
+                </p>
+            </div>
+        `;
         return;
     }
     
     // Set theme colors
-    document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff';
-    document.body.style.color = tg.themeParams.text_color || '#000000';
+    document.body.style.backgroundColor = tg?.themeParams?.bg_color || '#ffffff';
+    document.body.style.color = tg?.themeParams?.text_color || '#000000';
     
     // Setup search
     setupSearch();
@@ -47,9 +68,14 @@ function setupSearch() {
 
 // Load Clients from API
 async function loadClients() {
+    console.log('=== loadClients START ===');
     console.log('Loading clients for mid:', mid);
+    console.log('mid type:', typeof mid);
+    console.log('mid value:', JSON.stringify(mid));
+    
     try {
         if (!mid) {
+            console.error('mid is falsy:', mid);
             showError('Не удалось получить ID мастера');
             return;
         }
@@ -58,15 +84,25 @@ async function loadClients() {
         console.log('Fetching clients from:', url);
         
         const response = await fetch(url);
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
         
         if (!response.ok) {
-            throw new Error('Ошибка загрузки клиентов');
+            const errorText = await response.text();
+            console.error('Response error:', errorText);
+            throw new Error(`Ошибка загрузки клиентов (${response.status}): ${errorText}`);
         }
 
-        clients = await response.json();
+        const responseText = await response.text();
+        console.log('Response text:', responseText.substring(0, 200));
+        
+        clients = JSON.parse(responseText);
+        console.log('Clients parsed:', clients.length, 'items');
         renderClients(clients);
     } catch (error) {
+        console.error('=== loadClients ERROR ===');
         console.error('Error loading clients:', error);
+        console.error('Error stack:', error.stack);
         showError('Не удалось загрузить клиентов: ' + error.message);
         document.getElementById('clients-list').innerHTML = `
             <div class="error-state">
