@@ -617,13 +617,14 @@ async def reschedule_appointment_client(request: web.Request):
 
 async def get_master_appointments(request: web.Request):
     """Get appointments for a master on a specific date."""
-    mid = request.query.get("mid")
-    date_str = request.query.get("date")
-    
-    if not mid:
-        return web.json_response({"error": "mid required"}, status=400)
-    
-    async with async_session_maker() as session:
+    try:
+        mid = request.query.get("mid")
+        date_str = request.query.get("date")
+        
+        if not mid:
+            return web.json_response({"error": "mid required"}, status=400)
+        
+        async with async_session_maker() as session:
         mrepo = MasterRepository(session)
         srepo = ServiceRepository(session)
         crepo = ClientRepository(session)
@@ -690,6 +691,9 @@ async def get_master_appointments(request: web.Request):
             "appointments": result,
             "work_schedule": master.work_schedule or {}
         })
+    except Exception as e:
+        logger.error(f"Error in get_master_appointments: {e}", exc_info=True)
+        return web.json_response({"error": str(e)}, status=500)
 
 
 async def get_master_schedule(request: web.Request):
@@ -933,11 +937,12 @@ async def reschedule_appointment_master(request: web.Request):
 
 async def get_master_clients(request: web.Request):
     """Get list of all clients for a master."""
-    mid = request.query.get("mid")
-    if not mid:
-        return web.json_response({"error": "mid required"}, status=400)
-    
-    async with async_session_maker() as session:
+    try:
+        mid = request.query.get("mid")
+        if not mid:
+            return web.json_response({"error": "mid required"}, status=400)
+        
+        async with async_session_maker() as session:
         mrepo = MasterRepository(session)
         master = await mrepo.get_by_telegram_id(int(mid))
         if not master:
@@ -960,6 +965,9 @@ async def get_master_clients(request: web.Request):
             }
             for c in clients
         ])
+    except Exception as e:
+        logger.error(f"Error in get_master_clients: {e}", exc_info=True)
+        return web.json_response({"error": str(e)}, status=500)
 
 
 async def get_client_history(request: web.Request):
@@ -1024,11 +1032,12 @@ async def get_client_history(request: web.Request):
 
 async def get_master_services(request: web.Request):
     """Get all services for a master."""
-    mid = request.query.get("mid")
-    if not mid:
-        return web.json_response({"error": "mid required"}, status=400)
-    
-    async with async_session_maker() as session:
+    try:
+        mid = request.query.get("mid")
+        if not mid:
+            return web.json_response({"error": "mid required"}, status=400)
+        
+        async with async_session_maker() as session:
         mrepo = MasterRepository(session)
         srepo = ServiceRepository(session)
         
@@ -1049,6 +1058,9 @@ async def get_master_services(request: web.Request):
             }
             for s in services
         ])
+    except Exception as e:
+        logger.error(f"Error in get_master_services: {e}", exc_info=True)
+        return web.json_response({"error": str(e)}, status=500)
 
 
 async def save_master_service(request: web.Request):

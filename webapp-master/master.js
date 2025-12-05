@@ -4,7 +4,20 @@
   const mid = qs.get('mid');
   const status = (msg, err) => console.log(msg || (err||''));
 
-  async function api(path){ const r = await fetch(path); return r.json(); }
+  async function api(path){ 
+    try {
+      const r = await fetch(path); 
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      }
+      const text = await r.text();
+      if (!text) return {};
+      return JSON.parse(text);
+    } catch(e) {
+      console.error('API error:', e);
+      throw e;
+    }
+  }
 
   let currentAppointmentId = null;
   let currentServicePrice = 0;
@@ -196,14 +209,15 @@
   }
 
   async function loadAppointments(){
-    // Format date as YYYY-MM-DD in LOCAL date (not influenced by time)
-    // This ensures the date sent to server matches what user sees
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    
-    const data = await api(`/api/master/appointments?mid=${encodeURIComponent(mid)}&date=${dateStr}`);
+    try {
+      // Format date as YYYY-MM-DD in LOCAL date (not influenced by time)
+      // This ensures the date sent to server matches what user sees
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
+      const data = await api(`/api/master/appointments?mid=${encodeURIComponent(mid)}&date=${dateStr}`);
     
     // Update title
     const titleEl = document.getElementById('appointments-title');
@@ -302,6 +316,14 @@
       }));
       // Settings button moved to header; keep list clean
     } else { el.textContent = 'Ошибка загрузки'; }
+    } catch(e) {
+      console.error('Error loading appointments:', e);
+      const el = document.getElementById('appointments');
+      el.innerHTML = `<div style="color: #e74c3c; padding: 20px; text-align: center;">
+        ❌ Ошибка: ${e.message || 'Не удалось загрузить записи'}<br>
+        <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #9B7EBD; color: white; border: none; border-radius: 8px; cursor: pointer;">Обновить страницу</button>
+      </div>`;
+    }
   }
     
   // Separate reschedule calendar to avoid conflicts with dayoff calendar
