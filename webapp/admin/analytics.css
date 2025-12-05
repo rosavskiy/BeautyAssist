@@ -271,13 +271,13 @@ body {
 .stage-bar {
     position: relative;
     height: 60px;
-    background: linear-gradient(90deg, var(--tg-theme-button-color, #3390ec), rgba(51, 144, 236, 0.5));
+    background: linear-gradient(90deg, var(--tg-theme-button-color, #1976D2), #42A5F5);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.3s;
     width: 100%;
     max-width: 100%;
@@ -291,36 +291,38 @@ body {
     font-size: 16px;
     font-weight: 600;
     color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .stage-value {
     font-size: 14px;
     font-weight: 700;
     color: #ffffff;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
     padding: 4px 12px;
     border-radius: 12px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Different colors for funnel stages */
 #registered-bar {
-    background: linear-gradient(90deg, #2196F3, rgba(33, 150, 243, 0.5));
+    background: linear-gradient(90deg, #1976D2, #42A5F5);
 }
 
 #onboarded-bar {
-    background: linear-gradient(90deg, #4CAF50, rgba(76, 175, 80, 0.5));
+    background: linear-gradient(90deg, #388E3C, #66BB6A);
 }
 
 #first-service-bar {
-    background: linear-gradient(90deg, #FFC107, rgba(255, 193, 7, 0.5));
+    background: linear-gradient(90deg, #F57C00, #FFB74D);
 }
 
 #first-booking-bar {
-    background: linear-gradient(90deg, #FF9800, rgba(255, 152, 0, 0.5));
+    background: linear-gradient(90deg, #E64A19, #FF8A65);
 }
 
 #paid-bar {
-    background: linear-gradient(90deg, #9C27B0, rgba(156, 39, 176, 0.5));
+    background: linear-gradient(90deg, #7B1FA2, #BA68C8);
 }
 
 /* Loading Overlay */
