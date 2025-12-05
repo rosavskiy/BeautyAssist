@@ -3,11 +3,25 @@ let tg = window.Telegram.WebApp;
 let services = [];
 let currentServiceId = null;
 let deleteServiceId = null;
+let mid = null; // Master ID
+
+// Get master ID from URL params
+function getMasterId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mid') || tg.initDataUnsafe?.user?.id;
+}
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     tg.ready();
     tg.expand();
+    
+    // Get master ID
+    mid = getMasterId();
+    if (!mid) {
+        showError('Не удалось определить мастера');
+        return;
+    }
     
     // Set theme colors
     document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff';
@@ -52,13 +66,12 @@ function setupEventListeners() {
 // Load Services from API
 async function loadServices() {
     try {
-        const masterId = tg.initDataUnsafe?.user?.id;
-        if (!masterId) {
-            showError('Не удалось получить ID пользователя');
+        if (!mid) {
+            showError('Не удалось получить ID мастера');
             return;
         }
 
-        const response = await fetch(`/api/master/services?mid=${masterId}`);
+        const response = await fetch(`/api/master/services?mid=${mid}`);
         
         if (!response.ok) {
             throw new Error('Ошибка загрузки услуг');
@@ -212,13 +225,12 @@ async function handleServiceSubmit(e) {
     saveBtn.disabled = true;
     
     try {
-        const masterId = tg.initDataUnsafe?.user?.id;
-        if (!masterId) {
-            throw new Error('Не удалось получить ID пользователя');
+        if (!mid) {
+            throw new Error('Не удалось получить ID мастера');
         }
 
         const data = {
-            mid: masterId,
+            mid: mid,
             name,
             duration_minutes: duration,
             price,
@@ -281,9 +293,8 @@ async function confirmDelete() {
     if (!deleteServiceId) return;
     
     try {
-        const masterId = tg.initDataUnsafe?.user?.id;
-        if (!masterId) {
-            throw new Error('Не удалось получить ID пользователя');
+        if (!mid) {
+            throw new Error('Не удалось получить ID мастера');
         }
 
         const response = await fetch('/api/master/service/delete', {
@@ -292,7 +303,7 @@ async function confirmDelete() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                mid: masterId,
+                mid: mid,
                 service_id: deleteServiceId
             })
         });
