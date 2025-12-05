@@ -112,8 +112,10 @@
     if(ev.target.id === 'open-clients'){ loadClients(); document.getElementById('clients-section').classList.remove('hidden'); }
     if(ev.target.id === 'clients-close') document.getElementById('clients-section').classList.add('hidden');
     if(ev.target.id === 'client-history-close') document.getElementById('client-history-section').classList.add('hidden');
-    if(ev.target.id === 'open-services'){ loadServices(); document.getElementById('settings-section').classList.add('hidden'); document.getElementById('services-section').classList.remove('hidden'); }
-    if(ev.target.id === 'services-close') document.getElementById('services-section').classList.add('hidden');
+    if(ev.target.id === 'open-services'){ 
+      const url = `/webapp/master/services.html?mid=${encodeURIComponent(mid)}`;
+      window.location.href = url;
+    }
     if(ev.target.id === 'open-finances'){ 
       const url = `/webapp-master/finances.html?mid=${encodeURIComponent(mid)}`;
       window.location.href = url;
