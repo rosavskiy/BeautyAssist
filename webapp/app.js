@@ -169,7 +169,48 @@
       const data = await api(`/api/services?code=${encodeURIComponent(masterCode)}`);
       console.log('loadServices: received data =', data);
       if(Array.isArray(data)){
-        serviceSelect.innerHTML = data.map(s => `<option value="${s.id}" ${preselectService==s.id? 'selected':''}>${s.name} — ${s.price} ₽ / ${s.duration} мин</option>`).join('');
+        // Group services by category
+        const grouped = {};
+        const uncategorized = [];
+        
+        data.forEach(s => {
+          if (s.category && s.category.trim()) {
+            if (!grouped[s.category]) {
+              grouped[s.category] = [];
+            }
+            grouped[s.category].push(s);
+          } else {
+            uncategorized.push(s);
+          }
+        });
+        
+        // Build select with optgroups
+        let html = '';
+        
+        // Add categorized services
+        Object.keys(grouped).sort().forEach(category => {
+          html += `<optgroup label="${escapeHtml(category)}">`;
+          grouped[category].forEach(s => {
+            html += `<option value="${s.id}" ${preselectService==s.id? 'selected':''}>${escapeHtml(s.name)} — ${s.price} ₽ / ${s.duration} мин</option>`;
+          });
+          html += `</optgroup>`;
+        });
+        
+        // Add uncategorized services
+        if (uncategorized.length > 0) {
+          if (Object.keys(grouped).length > 0) {
+            html += `<optgroup label="Другие услуги">`;
+          }
+          uncategorized.forEach(s => {
+            html += `<option value="${s.id}" ${preselectService==s.id? 'selected':''}>${escapeHtml(s.name)} — ${s.price} ₽ / ${s.duration} мин</option>`;
+          });
+          if (Object.keys(grouped).length > 0) {
+            html += `</optgroup>`;
+          }
+        }
+        
+        serviceSelect.innerHTML = html;
+        
         if(data.length){
           // Load slots after services are loaded and service is selected
           await loadSlots();
@@ -181,6 +222,13 @@
       console.error('loadServices error:', e);
       setStatus('Ошибка загрузки услуг', true);
     }
+  }
+  
+  // Helper function to escape HTML
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   async function loadSlots(dateStr){

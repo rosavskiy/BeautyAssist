@@ -112,7 +112,13 @@ async def get_services(request: web.Request):
         
         services = await srepo.get_all_by_master(master.id, active_only=True)
         return web.json_response([
-            {"id": s.id, "name": s.name, "price": s.price, "duration": s.duration_minutes}
+            {
+                "id": s.id, 
+                "name": s.name, 
+                "price": s.price, 
+                "duration": s.duration_minutes,
+                "category": s.category
+            }
             for s in services
         ])
 

@@ -75,6 +75,23 @@ select:focus, input:focus {
   box-shadow: 0 0 0 4px rgba(184, 167, 214, 0.1);
 }
 
+/* Optgroup styles */
+select optgroup {
+  font-weight: 700;
+  font-size: 14px;
+  color: #9B7EBD;
+  background: #F8F9FA;
+  padding: 8px 4px;
+  font-style: normal;
+}
+
+select option {
+  padding: 8px 12px;
+  color: #2D3142;
+  background: #FFFFFF;
+  font-weight: 400;
+}
+
 .slots {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
