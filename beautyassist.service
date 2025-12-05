@@ -1,0 +1,25 @@
+[Unit]
+Description=BeautyAssist Telegram Bot
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/BeautyAssist
+Environment="PATH=/var/www/BeautyAssist/venv/bin"
+ExecStart=/var/www/BeautyAssist/venv/bin/python -m bot.main
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Logging
+SyslogIdentifier=beautyassist
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
