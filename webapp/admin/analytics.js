@@ -77,6 +77,11 @@ async function loadTabData(tabName) {
 async function loadGrowthMetrics() {
     try {
         const response = await fetch('/api/admin/analytics/growth?period=month');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         
         document.getElementById('dau-value').textContent = data.dau;
@@ -94,6 +99,7 @@ async function loadGrowthMetrics() {
         }
     } catch (error) {
         console.error('Error loading growth metrics:', error);
+        throw error; // Re-throw to be caught by loadAllData
     }
 }
 
@@ -101,6 +107,11 @@ async function loadGrowthMetrics() {
 async function loadRetentionData() {
     try {
         const response = await fetch('/api/admin/analytics/retention');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         
         // Update retention stats
@@ -115,6 +126,7 @@ async function loadRetentionData() {
         renderRetentionChart(data);
     } catch (error) {
         console.error('Error loading retention data:', error);
+        throw error; // Re-throw to be caught by loadAllData
     }
 }
 
@@ -229,6 +241,11 @@ function renderRetentionChart(data) {
 async function loadCohortData() {
     try {
         const response = await fetch('/api/admin/analytics/cohorts?weeks=8');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         
         const tbody = document.getElementById('cohort-tbody');
@@ -272,6 +289,11 @@ function getCohortColor(percentage) {
 async function loadFunnelData() {
     try {
         const response = await fetch('/api/admin/analytics/funnel');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         
         // Update funnel bars width and values
@@ -288,6 +310,7 @@ async function loadFunnelData() {
         renderFunnelChart(data);
     } catch (error) {
         console.error('Error loading funnel data:', error);
+        throw error; // Re-throw to be caught by loadAllData
     }
 }
 
