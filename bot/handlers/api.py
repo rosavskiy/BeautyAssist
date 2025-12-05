@@ -1067,8 +1067,8 @@ async def get_master_services(request: web.Request):
                     "name": s.name,
                     "price": s.price,
                     "duration_minutes": s.duration_minutes,
-                    "category": s.category if hasattr(s, 'category') else None,
-                    "description": s.description if hasattr(s, 'description') else None,
+                    "category": s.category,
+                    "description": s.description,
                     "is_active": s.is_active
                 }
                 for s in services
@@ -1125,10 +1125,8 @@ async def save_master_service(request: web.Request):
             service.name = name
             service.price = price
             service.duration_minutes = duration
-            if hasattr(service, 'category'):
-                service.category = category
-            if hasattr(service, 'description'):
-                service.description = description
+            service.category = category
+            service.description = description
         else:
             # Create new
             service = Service(
@@ -1136,12 +1134,10 @@ async def save_master_service(request: web.Request):
                 name=name,
                 price=price,
                 duration_minutes=duration,
+                category=category,
+                description=description,
                 is_active=True
             )
-            if hasattr(service, 'category'):
-                service.category = category
-            if hasattr(service, 'description'):
-                service.description = description
             session.add(service)
         
         await session.commit()
