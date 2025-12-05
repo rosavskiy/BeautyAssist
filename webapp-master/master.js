@@ -28,15 +28,18 @@
     renderCalendar();
   }
   function openCalendarDayOffMode(){
+    console.log('openCalendarDayOffMode called');
     document.getElementById('settings-section').classList.add('hidden');
     cal.onDatePick = null;
     cal.mode = 'dayoff';
     // Всегда загружаем актуальный график перед открытием режима дней офф
     api(`/api/master/appointments?mid=${encodeURIComponent(mid)}`).then(data => {
+      console.log('Calendar data loaded:', data);
       if(data && data.work_schedule){ window.__master_schedule = Object.assign({}, data.work_schedule, {_loaded:true}); }
       cal.toggledOff = new Set((window.__master_schedule?.days_off_dates) || []);
       document.getElementById('slots-list').innerHTML = '';
       document.getElementById('calendar-section').classList.remove('hidden');
+      console.log('Calendar section should be visible now');
       renderCalendar();
       const slotsEl = document.getElementById('slots-list');
       const help = document.createElement('div'); help.className='muted'; help.textContent='Нажимайте на дни, чтобы отметить как нерабочие'; slotsEl.appendChild(help);
@@ -127,7 +130,10 @@
     if(ev.target.id === 'service-delete') deleteService();
     if(ev.target.id === 'daysoff-close') document.getElementById('daysoff-section').classList.add('hidden');
     if(ev.target.id === 'daysoff-save') saveDaysOff();
-    if(ev.target.id === 'open-dayoff-calendar') openCalendarDayOffMode();
+    if(ev.target.id === 'open-dayoff-calendar') {
+      console.log('Button clicked: open-dayoff-calendar');
+      openCalendarDayOffMode();
+    }
     if(ev.target.id === 'open-hours') openHoursModal();
     if(ev.target.id === 'hours-close') document.getElementById('hours-section').classList.add('hidden');
     if(ev.target.id === 'hours-save') saveHours();
