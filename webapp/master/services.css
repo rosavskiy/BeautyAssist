@@ -161,14 +161,31 @@ body {
   background: #F0EDF7;
   color: #7B61A8;
   margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.service-details {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .service-info {
   display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 6px;
   color: #5C6478;
   font-size: 14px;
+}
+
+.info-label {
+  font-weight: 500;
+}
+
+.info-value {
+  font-weight: 600;
+  color: #2D3142;
 }
 
 .service-description {
@@ -185,8 +202,50 @@ body {
 
 .service-actions button {
   flex: 1;
-  padding: 10px;
+  padding: 12px 16px;
   font-size: 14px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-edit {
+  background: #FFFFFF;
+  color: #7B61A8;
+  border: 2px solid #E8ECF1;
+}
+
+.btn-edit:hover {
+  background: #F0EDF7;
+  border-color: #D4C9E8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(184, 167, 214, 0.15);
+}
+
+.btn-delete {
+  background: #FFFFFF;
+  color: #E57373;
+  border: 2px solid #E8ECF1;
+}
+
+.btn-delete:hover {
+  background: #FFEBEE;
+  border-color: #FFCDD2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(229, 115, 115, 0.15);
+}
+
+.service-inactive {
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: #F5F5F5;
+  color: #9E9E9E;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
 }
 
 /* Empty State */

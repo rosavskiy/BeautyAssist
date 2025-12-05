@@ -36,15 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Setup Event Listeners
 function setupEventListeners() {
-    console.log('Setting up event listeners...');
-    
     // Add service button
     const addBtn = document.getElementById('add-service-btn');
-    console.log('Add button found:', addBtn);
     
     if (addBtn) {
         addBtn.addEventListener('click', () => {
-            console.log('Add service button clicked!');
             openServiceModal();
         });
     }
@@ -153,11 +149,7 @@ function renderServices() {
 
 // Open Service Modal (Add or Edit)
 function openServiceModal(serviceId = null) {
-    console.log('openServiceModal called with serviceId:', serviceId);
-    
     const modal = document.getElementById('service-modal');
-    console.log('Modal element:', modal);
-    
     const form = document.getElementById('service-form');
     const title = document.getElementById('modal-title');
     
@@ -184,9 +176,7 @@ function openServiceModal(serviceId = null) {
         document.getElementById('service-id').value = '';
     }
     
-    console.log('Setting modal display to flex');
     modal.style.display = 'flex';
-    console.log('Modal display after set:', modal.style.display);
     
     // Focus first input
     setTimeout(() => {
