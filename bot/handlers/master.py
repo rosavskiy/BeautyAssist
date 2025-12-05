@@ -59,7 +59,7 @@ async def cmd_services(message: Message):
         
         # Use webapp_base_url from settings or fallback to localhost for development
         base_url = str(settings.webapp_base_url) if settings.webapp_base_url else "http://localhost:8080"
-        webapp_url = f"{base_url}/webapp/master/services.html?mid={master.id}"
+        webapp_url = f"{base_url}/webapp/master/services.html?mid={message.from_user.id}"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
@@ -121,7 +121,7 @@ async def cmd_clients(message: Message):
         
         # Use webapp_base_url from settings or fallback to localhost for development
         base_url = str(settings.webapp_base_url) if settings.webapp_base_url else "http://localhost:8080"
-        webapp_url = f"{base_url}/webapp/master/clients.html?mid={master.id}"
+        webapp_url = f"{base_url}/webapp/master/clients.html?mid={message.from_user.id}"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
