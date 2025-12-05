@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.base import DBSession
 from database.repositories.subscription import SubscriptionRepository
 from database.repositories.master import MasterRepository
+from bot.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,10 @@ class SubscriptionMiddleware(BaseMiddleware):
             user_id = event.from_user.id
             text = event.data or ""
         else:
+            return await handler(event, data)
+        
+        # Skip subscription check for admins
+        if user_id in settings.admin_telegram_ids:
             return await handler(event, data)
         
         # Check if command/callback is allowed without subscription
