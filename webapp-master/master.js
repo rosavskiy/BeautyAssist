@@ -756,6 +756,13 @@
           reason 
         })
       });
+      
+      if (!res.ok) {
+        const json = await res.json();
+        alert('Ошибка отмены: ' + (json?.error || 'Неизвестная ошибка'));
+        return;
+      }
+      
       const json = await res.json();
       
       if (json && json.ok) {
@@ -764,10 +771,10 @@
         showSuccessTick();
         loadAppointments();
       } else {
-        alert('Ошибка отмены: ' + (json?.error || ''));
+        alert('Ошибка отмены: ' + (json?.error || 'Неизвестная ошибка'));
       }
     } catch (e) {
-      alert('Ошибка запроса');
+      alert('Ошибка запроса: ' + e.message);
     }
   });
 
