@@ -18,6 +18,7 @@ from database.repositories import (
 from database.models import Service, AppointmentStatus
 from database.models.appointment import Appointment
 from database.models.client import Client
+from database.models.expense_category import ExpenseCategory
 from bot.utils.time_utils import generate_half_hour_slots, parse_work_schedule
 from bot.config import settings
 from services.scheduler import create_appointment_reminders
@@ -1456,6 +1457,12 @@ async def create_expense(request: web.Request):
     if not all([mid, category, amount, expense_date_iso]):
         return web.json_response({"error": "mid, category, amount, expense_date required"}, status=400)
     
+    # Validate category
+    if not ExpenseCategory.is_valid(category):
+        return web.json_response({
+            "error": f"invalid category. Allowed: {ExpenseCategory.get_all_values()}"
+        }, status=400)
+    
     try:
         amount = int(amount)
         expense_date = datetime.fromisoformat(expense_date_iso)
@@ -1518,7 +1525,13 @@ async def update_expense(request: web.Request):
         
         # Update fields if provided
         if "category" in data:
-            expense.category = data["category"]
+            # Validate category
+            category = data["category"]
+            if not ExpenseCategory.is_valid(category):
+                return web.json_response({
+                    "error": f"invalid category. Allowed: {ExpenseCategory.get_all_values()}"
+                }, status=400)
+            expense.category = category
         if "amount" in data:
             try:
                 expense.amount = int(data["amount"])
