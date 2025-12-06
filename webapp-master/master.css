@@ -4,8 +4,44 @@
 .fin-title { font-size: 22px; margin:0; }
 .fin-periods { display:flex; gap:8px; flex-wrap:wrap; }
 
-.fin-custom-period { display:flex; gap:8px; align-items:center; margin: 8px 0 12px; }
+.fin-custom-period { 
+  display:flex; 
+  gap:8px; 
+  align-items:center; 
+  margin: 8px 0 12px;
+  flex-wrap: wrap;
+}
 .fin-custom-period.hidden { display: none !important; }
+
+/* Кнопка Применить в периоде */
+.fin-custom-period .btn-primary {
+  white-space: nowrap;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+/* Mobile optimization для кнопки Период */
+@media (max-width: 480px) {
+  .fin-custom-period {
+    gap: 6px;
+  }
+  
+  .fin-custom-period input[type="text"] {
+    flex: 1;
+    min-width: 100px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  
+  .fin-custom-period .btn-primary {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  
+  .fin-custom-period span {
+    font-size: 14px;
+  }
+}
 
 /* Стилизация полей выбора дат на странице Финансы */
 .fin-custom-period input[type="date"] {
@@ -418,11 +454,52 @@ h1 {
   border: 2px solid #E8ECF1;
   border-radius: 12px;
   text-align: center;
-  padding: 12px 0;
+  padding: 8px 0;
   cursor: pointer;
   font-weight: 500;
   color: #2D3142;
   transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+/* Mobile optimization для календаря */
+@media (max-width: 480px) {
+  .day-cell {
+    padding: 6px 0;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  
+  .calendar {
+    padding: 12px;
+  }
+  
+  .calendar-grid {
+    gap: 4px;
+  }
+  
+  .calendar-weekdays {
+    gap: 4px;
+    font-size: 11px;
+  }
+  
+  .modal-content {
+    padding: 16px;
+    border-radius: 20px;
+  }
+  
+  .modal-header h2 {
+    font-size: 18px;
+  }
+  
+  .cal-title {
+    font-size: 16px;
+  }
+  
+  .nav-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
 }
 
 .day-cell:hover {

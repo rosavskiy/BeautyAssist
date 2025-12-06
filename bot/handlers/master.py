@@ -35,15 +35,33 @@ async def cmd_menu(message: Message):
         master = await MasterRepository(session).get_by_telegram_id(message.from_user.id)
         if not master:
             return await message.answer("Нажмите /start для регистрации")
+        
+        # Use webapp_base_url from settings
+        base_url = str(settings.webapp_base_url) if settings.webapp_base_url else "http://localhost:8080"
+        
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="Открыть запись (WebApp)", web_app=WebAppInfo(url=build_webapp_url_direct(master)))],
-            [InlineKeyboardButton(text="Открыть кабинет (Master)", web_app=WebAppInfo(url=build_master_webapp_link(master)))],
-            [
-                InlineKeyboardButton(text="Записи: ближайший день", callback_data="next_day"),
-                InlineKeyboardButton(text="Записи: ближайшая неделя", callback_data="next_week"),
-            ],
+            [InlineKeyboardButton(
+                text="📅 Записи (Кабинет мастера)", 
+                web_app=WebAppInfo(url=f"{base_url}/webapp-master/master.html?mid={message.from_user.id}")
+            )],
+            [InlineKeyboardButton(
+                text="💰 Финансы", 
+                web_app=WebAppInfo(url=f"{base_url}/webapp-master/finances.html?mid={message.from_user.id}")
+            )],
+            [InlineKeyboardButton(
+                text="👥 Клиенты", 
+                web_app=WebAppInfo(url=f"{base_url}/webapp/master/clients.html?mid={message.from_user.id}")
+            )],
+            [InlineKeyboardButton(
+                text="📋 Услуги", 
+                web_app=WebAppInfo(url=f"{base_url}/webapp/master/services.html?mid={message.from_user.id}")
+            )],
+            [InlineKeyboardButton(
+                text="Открыть запись (для клиентов)", 
+                web_app=WebAppInfo(url=build_webapp_url_direct(master))
+            )],
         ])
-        await message.answer("Главное меню", reply_markup=kb)
+        await message.answer("🎯 Главное меню", reply_markup=kb)
 
 
 @router.message(Command("services"))
@@ -76,36 +94,30 @@ async def cmd_services(message: Message):
 
 @router.message(Command("appointments"))
 async def cmd_appointments(message: Message):
-    """Show today's appointments."""
+    """Open master appointments Mini App."""
     async with async_session_maker() as session:
-        mrepo = MasterRepository(session)
-        arepo = AppointmentRepository(session)
-        srepo = ServiceRepository(session)
-        crepo = ClientRepository(session)
-        master = await mrepo.get_by_telegram_id(message.from_user.id)
+        master = await MasterRepository(session).get_by_telegram_id(message.from_user.id)
         if not master:
             return await message.answer("Нажмите /start для регистрации")
-        tz = pytz_timezone(master.timezone or "Europe/Moscow")
-        now_local = datetime.now(timezone.utc).astimezone(tz)
-        start_local = tz.localize(datetime(now_local.year, now_local.month, now_local.day, 0, 0))
-        end_local = start_local + timedelta(days=1)
-        start_day = start_local.astimezone(timezone.utc).replace(tzinfo=None)
-        end_day = end_local.astimezone(timezone.utc).replace(tzinfo=None)
-        apps = await arepo.get_by_master(master.id, start_date=start_day, end_date=end_day)
-        if not apps:
-            return await message.answer("На сегодня записей нет")
-        lines = ["Записи на сегодня:"]
-        for a in sorted(apps, key=lambda x: x.start_time):
-            try:
-                service = await srepo.get_by_id(a.service_id)
-            except Exception:
-                service = None
-            client = await crepo.get_by_id(a.client_id)
-            local_start = a.start_time.replace(tzinfo=timezone.utc).astimezone(tz)
-            when = local_start.strftime('%H:%M')
-            svc_name = service.name if service else "Услуга"
-            lines.append(f"- {when} {svc_name} — {client.name} ({client.phone})")
-        await message.answer("\n".join(lines))
+        
+        # Create WebApp button
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+        
+        # Use webapp_base_url from settings or fallback to localhost for development
+        base_url = str(settings.webapp_base_url) if settings.webapp_base_url else "http://localhost:8080"
+        webapp_url = f"{base_url}/webapp-master/master.html?mid={message.from_user.id}"
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="📅 Кабинет мастера",
+                web_app=WebAppInfo(url=webapp_url)
+            )]
+        ])
+        
+        await message.answer(
+            "Управляйте записями через удобный интерфейс 👇",
+            reply_markup=keyboard
+        )
 
 
 @router.message(Command("clients"))
@@ -132,6 +144,34 @@ async def cmd_clients(message: Message):
         
         await message.answer(
             "Управляйте вашими контактами через удобный интерфейс 👇",
+            reply_markup=keyboard
+        )
+
+
+@router.message(Command("finances"))
+async def cmd_finances(message: Message):
+    """Open finances Mini App."""
+    async with async_session_maker() as session:
+        master = await MasterRepository(session).get_by_telegram_id(message.from_user.id)
+        if not master:
+            return await message.answer("Нажмите /start для регистрации")
+        
+        # Create WebApp button
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+        
+        # Use webapp_base_url from settings or fallback to localhost for development
+        base_url = str(settings.webapp_base_url) if settings.webapp_base_url else "http://localhost:8080"
+        webapp_url = f"{base_url}/webapp-master/finances.html?mid={message.from_user.id}"
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="💰 Финансы",
+                web_app=WebAppInfo(url=webapp_url)
+            )]
+        ])
+        
+        await message.answer(
+            "Управляйте финансами через удобный интерфейс 👇",
             reply_markup=keyboard
         )
 
