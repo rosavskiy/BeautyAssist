@@ -43,7 +43,9 @@ async def send_due_reminders(bot: Bot, session: AsyncSession) -> int:
                 continue
             
             # Skip if appointment is cancelled or completed
-            if app.status in ["cancelled", "completed", "no_show"]:
+            # EXCEPT for cancellation/reschedule notifications - those MUST be sent
+            if (app.status in ["cancelled", "completed", "no_show"] and 
+                reminder.reminder_type not in [ReminderType.CANCELLED_BY_MASTER.value, ReminderType.RESCHEDULED.value]):
                 await reminder_repo.update_status(
                     reminder.id,
                     ReminderStatus.CANCELLED,
