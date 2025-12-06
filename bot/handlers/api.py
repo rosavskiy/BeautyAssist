@@ -885,26 +885,26 @@ async def cancel_appointment_master(request: web.Request):
         
         await session.commit()
         
-        # Notify client
+        # Notify client via reminder system
         if client and client.telegram_id:
             try:
+                from database.models.reminder import ReminderType, ReminderChannel
                 tz = pytz_timezone(master.timezone or "Europe/Moscow")
                 start_local = app.start_time.replace(tzinfo=timezone.utc).astimezone(tz)
-                date_str = start_local.strftime("%d.%m.%Y в %H:%M")
-                tz_name = master.timezone or "Europe/Moscow"
                 
-                text = (
-                    f"❌ Мастер отменил запись\n\n"
-                    f"Услуга: {service.name if service else 'Услуга'}\n"
-                    f"Дата: {date_str} ({tz_name})\n"
+                # Create immediate reminder for notification
+                reminder_repo = ReminderRepository(session)
+                await reminder_repo.create(
+                    appointment_id=app.id,
+                    reminder_type=ReminderType.CANCELLED_BY_MASTER,
+                    scheduled_time=datetime.now(timezone.utc),  # Send immediately
+                    channel=ReminderChannel.TELEGRAM,
+                    extra_data={"reason": reason} if reason else None
                 )
-                if reason:
-                    text += f"Причина: {reason}\n"
-                text += f"\nВы можете записаться на другое время через бота"
-                
-                await bot.send_message(client.telegram_id, text)
+                await session.commit()
+                logger.info(f"Created cancellation reminder for client {client.telegram_id}")
             except Exception as e:
-                logger.error(f"Failed to notify client about cancellation: {e}")
+                logger.error(f"Failed to create cancellation reminder: {e}")
         
         return web.json_response({"ok": True})
 
@@ -976,25 +976,28 @@ async def reschedule_appointment_master(request: web.Request):
         
         await session.commit()
         
-        # Notify client
+        # Notify client via reminder system
         if client and client.telegram_id:
             try:
+                from database.models.reminder import ReminderType, ReminderChannel
                 tz = pytz_timezone(master.timezone or "Europe/Moscow")
                 old_local = old_start.replace(tzinfo=timezone.utc).astimezone(tz)
                 new_local = new_start_utc.astimezone(tz)
                 old_str = old_local.strftime("%d.%m.%Y в %H:%M")
-                new_str = new_local.strftime("%d.%m.%Y в %H:%M")
-                tz_name = master.timezone or "Europe/Moscow"
                 
-                text = (
-                    f"🔄 Мастер перенес вашу запись\n\n"
-                    f"Услуга: {service.name if service else 'Услуга'}\n"
-                    f"Было: {old_str}\n"
-                    f"Стало: {new_str} ({tz_name})"
+                # Create immediate reminder for notification
+                reminder_repo = ReminderRepository(session)
+                await reminder_repo.create(
+                    appointment_id=app.id,
+                    reminder_type=ReminderType.RESCHEDULED,
+                    scheduled_time=datetime.now(timezone.utc),  # Send immediately
+                    channel=ReminderChannel.TELEGRAM,
+                    extra_data={"old_time": old_str}
                 )
-                await bot.send_message(client.telegram_id, text)
+                await session.commit()
+                logger.info(f"Created reschedule reminder for client {client.telegram_id}")
             except Exception as e:
-                logger.error(f"Failed to notify client about reschedule: {e}")
+                logger.error(f"Failed to create reschedule reminder: {e}")
         
         return web.json_response({"ok": True})
 

@@ -3,6 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from sqlalchemy import BigInteger, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -14,10 +15,12 @@ if TYPE_CHECKING:
 
 
 class ReminderType(str, Enum):
-    """Reminder type enum."""
+    """Тип напоминания."""
     T_MINUS_24H = "t_minus_24h"  # За 24 часа до записи
     T_MINUS_2H = "t_minus_2h"  # За 2 часа до записи
     REACTIVATION = "reactivation"  # Реактивация старого клиента
+    RESCHEDULED = "rescheduled"  # Запись перенесена
+    CANCELLED_BY_MASTER = "cancelled_by_master"  # Запись отменена мастером
 
 
 class ReminderChannel(str, Enum):
@@ -72,6 +75,13 @@ class Reminder(Base):
     
     # Error message if failed
     error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    
+    # Additional data (JSON) for notification context
+    extra_data: Mapped[dict | None] = mapped_column(
+        type_=sa.JSON,
+        nullable=True,
+        comment="Additional data like old_time, reason, etc."
+    )
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)

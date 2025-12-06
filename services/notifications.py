@@ -94,6 +94,30 @@ async def send_due_reminders(bot: Bot, session: AsyncSession) -> int:
                     f"👤 Мастер: {master_name}\n\n"
                     f"Если не можете прийти, пожалуйста, предупредите заранее."
                 )
+            elif reminder.reminder_type == ReminderType.RESCHEDULED.value:
+                # Запись перенесена мастером
+                old_time = reminder.extra_data.get('old_time') if reminder.extra_data else None
+                text = (
+                    f"🔄 <b>Мастер перенес вашу запись</b>\n\n"
+                    f"📋 Услуга: <i>{service_name}</i>\n"
+                )
+                if old_time:
+                    text += f"Было: {old_time}\n"
+                text += (
+                    f"Стало: <b>{date_str} в {time_str}</b> ({tz_name})\n\n"
+                    f"👤 Мастер: {master_name}"
+                )
+            elif reminder.reminder_type == ReminderType.CANCELLED_BY_MASTER.value:
+                # Запись отменена мастером
+                reason = reminder.extra_data.get('reason') if reminder.extra_data else None
+                text = (
+                    f"❌ <b>Мастер отменил запись</b>\n\n"
+                    f"📋 Услуга: <i>{service_name}</i>\n"
+                    f"📅 Дата: {date_str} в {time_str} ({tz_name})\n"
+                )
+                if reason:
+                    text += f"💬 Причина: {reason}\n"
+                text += f"\nВы можете записаться на другое время через бота."
             elif reminder.reminder_type == ReminderType.REACTIVATION.value:
                 text = (
                     f"👋 <b>Давно не виделись!</b>\n\n"
