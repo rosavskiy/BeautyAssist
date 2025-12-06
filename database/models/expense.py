@@ -1,7 +1,7 @@
 """Expense model - represents master's expenses."""
 from datetime import datetime
 
-from sqlalchemy import BigInteger, String, Integer, DateTime, ForeignKey, Text
+from sqlalchemy import BigInteger, String, Integer, DateTime, ForeignKey, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -34,7 +34,11 @@ class Expense(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     
     # Date when expense occurred
-    expense_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expense_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True  # Index for date range queries
+    )
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
@@ -42,6 +46,11 @@ class Expense(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False
+    )
+    
+    # Composite index for common query pattern: filter by master + date range
+    __table_args__ = (
+        Index('ix_expenses_master_date', 'master_id', 'expense_date'),
     )
     
     def __repr__(self) -> str:

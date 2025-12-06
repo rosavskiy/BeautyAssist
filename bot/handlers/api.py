@@ -1315,9 +1315,19 @@ async def get_financial_analytics(request: web.Request):
             .order_by(func.sum(Appointment.payment_amount).desc())
         )
         revenue_by_service_result = await session.execute(revenue_by_service_stmt)
+        
+        # FIX N+1: Prefetch all services at once instead of querying one by one
+        rows = revenue_by_service_result.all()
+        service_ids = [row.service_id for row in rows if row.service_id]
+        
+        # Single query to fetch all needed services
+        services = await srepo.get_by_ids(service_ids)
+        service_map = {s.id: s for s in services}
+        
+        # Build response using cached services
         revenue_by_service = []
-        for row in revenue_by_service_result.all():
-            service = await srepo.get_by_id(row.service_id)
+        for row in rows:
+            service = service_map.get(row.service_id) if row.service_id else None
             revenue_by_service.append({
                 "service_name": service.name if service else "Unknown",
                 "revenue": row.total or 0,

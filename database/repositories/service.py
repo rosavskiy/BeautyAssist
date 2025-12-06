@@ -20,6 +20,16 @@ class ServiceRepository:
         )
         return result.scalar_one_or_none()
     
+    async def get_by_ids(self, service_ids: List[int]) -> List[Service]:
+        """Get multiple services by IDs (for prefetching)."""
+        if not service_ids:
+            return []
+        
+        result = await self.session.execute(
+            select(Service).where(Service.id.in_(service_ids))
+        )
+        return list(result.scalars().all())
+    
     async def get_all_by_master(
         self,
         master_id: int,
