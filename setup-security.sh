@@ -86,7 +86,6 @@ bantime = 600
 enabled = true
 port = http,https
 filter = nginx-botsearch
-logpath = /var/log/nginx/beautyassist_access.log
 logpath = /var/log/nginx/beautyassist_blocked.log
 maxretry = 5
 findtime = 300
