@@ -742,9 +742,14 @@
   });
 
   document.getElementById('cancel-reason-confirm').addEventListener('click', async () => {
-    if (!currentCancelAppointmentId) return;
+    console.log('Cancel button clicked!');
+    if (!currentCancelAppointmentId) {
+      console.log('No appointment ID');
+      return;
+    }
     
     const reason = document.getElementById('cancel-reason-input').value.trim();
+    console.log('Cancelling appointment:', currentCancelAppointmentId, 'reason:', reason);
     
     try {
       const res = await fetch('/api/master/appointment/cancel', {
@@ -757,13 +762,17 @@
         })
       });
       
+      console.log('Response status:', res.status);
+      
       if (!res.ok) {
         const json = await res.json();
+        console.error('Server error:', json);
         alert('Ошибка отмены: ' + (json?.error || 'Неизвестная ошибка'));
         return;
       }
       
       const json = await res.json();
+      console.log('Response data:', json);
       
       if (json && json.ok) {
         document.getElementById('cancel-reason-section').classList.add('hidden');
@@ -774,6 +783,7 @@
         alert('Ошибка отмены: ' + (json?.error || 'Неизвестная ошибка'));
       }
     } catch (e) {
+      console.error('Fetch error:', e);
       alert('Ошибка запроса: ' + e.message);
     }
   });
