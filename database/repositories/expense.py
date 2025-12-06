@@ -45,19 +45,23 @@ class ExpenseRepository:
         master_id: int,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        category: Optional[str] = None
-    ) -> List[Expense]:
+        category: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0
+    ) -> tuple[List[Expense], int]:
         """
-        Get expenses for a master with optional filters.
+        Get expenses for a master with optional filters and pagination.
         
         Args:
             master_id: Master ID
             start_date: Filter expenses from this date (inclusive)
             end_date: Filter expenses until this date (inclusive)
             category: Filter by category
+            limit: Maximum number of expenses to return (None = no limit)
+            offset: Number of expenses to skip
         
         Returns:
-            List of expenses
+            Tuple of (list of expenses, total count)
         """
         conditions = [Expense.master_id == master_id]
         
@@ -68,9 +72,21 @@ class ExpenseRepository:
         if category:
             conditions.append(Expense.category == category)
         
+        # Count total matching expenses
+        count_stmt = select(func.count(Expense.id)).where(and_(*conditions))
+        total_result = await self.session.execute(count_stmt)
+        total_count = total_result.scalar() or 0
+        
+        # Get paginated expenses
         stmt = select(Expense).where(and_(*conditions)).order_by(Expense.expense_date.desc())
+        
+        if limit is not None:
+            stmt = stmt.limit(limit).offset(offset)
+        
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        expenses = list(result.scalars().all())
+        
+        return expenses, total_count
     
     async def update(self, expense: Expense) -> Expense:
         """Update an existing expense."""

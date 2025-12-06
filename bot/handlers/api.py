@@ -1369,14 +1369,29 @@ async def get_financial_analytics(request: web.Request):
 
 
 async def get_expenses(request: web.Request):
-    """Get expenses for a master with filters."""
+    """Get expenses for a master with filters and pagination."""
     mid = request.query.get("mid")
     start_date_iso = request.query.get("start_date")
     end_date_iso = request.query.get("end_date")
     category = request.query.get("category")
+    limit_str = request.query.get("limit", "50")  # Default 50 per page
+    offset_str = request.query.get("offset", "0")
     
     if not mid:
         return web.json_response({"error": "mid required"}, status=400)
+    
+    # Parse pagination parameters
+    try:
+        limit = int(limit_str) if limit_str else 50
+        offset = int(offset_str) if offset_str else 0
+        
+        # Validate limits
+        if limit < 1 or limit > 200:
+            limit = 50
+        if offset < 0:
+            offset = 0
+    except ValueError:
+        return web.json_response({"error": "invalid limit or offset"}, status=400)
     
     start_date = None
     end_date = None
@@ -1397,11 +1412,14 @@ async def get_expenses(request: web.Request):
         if not master:
             return web.json_response({"error": "master not found"}, status=404)
         
-        expenses = await erepo.get_by_master(
+        # Get expenses with pagination
+        expenses, total_count = await erepo.get_by_master(
             master_id=master.id,
             start_date=start_date,
             end_date=end_date,
-            category=category
+            category=category,
+            limit=limit,
+            offset=offset
         )
         
         return web.json_response({
@@ -1414,7 +1432,11 @@ async def get_expenses(request: web.Request):
                     "description": e.description or ""
                 }
                 for e in expenses
-            ]
+            ],
+            "total": total_count,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + len(expenses) < total_count
         })
 
 
