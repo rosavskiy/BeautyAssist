@@ -60,7 +60,8 @@ class ReminderRepository:
         appointment_id: int,
         reminder_type: ReminderType,
         scheduled_time: datetime,
-        channel: ReminderChannel = ReminderChannel.TELEGRAM
+        channel: ReminderChannel = ReminderChannel.TELEGRAM,
+        extra_data: dict | None = None
     ) -> Reminder:
         """Create new reminder."""
         reminder = Reminder(
@@ -68,7 +69,8 @@ class ReminderRepository:
             reminder_type=reminder_type.value,
             channel=channel.value,
             scheduled_time=scheduled_time,
-            status=ReminderStatus.SCHEDULED.value
+            status=ReminderStatus.SCHEDULED.value,
+            extra_data=extra_data
         )
         
         self.session.add(reminder)
