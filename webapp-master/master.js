@@ -26,6 +26,7 @@
   }
 
   let currentAppointmentId = null;
+  let currentCancelAppointmentId = null;
   let currentServicePrice = 0;
   
   // Date navigation state
@@ -300,7 +301,7 @@
         el.appendChild(card);
       });
       
-      let currentCancelAppointmentId = null;
+      // Use global currentCancelAppointmentId variable (declared at top of file)
       
       el.querySelectorAll('.btn-cancel').forEach(btn => btn.addEventListener('click', async (ev) => {
         currentCancelAppointmentId = ev.target.getAttribute('data-id');
