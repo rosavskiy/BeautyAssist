@@ -243,13 +243,16 @@
           commentInfo = `<div style="color: #7C88A0; margin-top: 8px; padding: 8px; background: #F5F7FA; border-radius: 8px;">💬 ${app.client_comment}</div>`;
         }
         
+        const priceInfo = app.service_price ? `<div style="color: #7C88A0; margin-bottom: 12px;">💰 ${app.service_price} ₽</div>` : '';
+        
         card.innerHTML = `
           <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
             <div style="font-weight: 600; font-size: 16px;">${app.service}</div>
             <div class="badge ${statusClass}">${statusIcon} ${statusText}</div>
           </div>
           <div style="color: #7C88A0; margin-bottom: 4px;">📅 ${dateStr}</div>
-          <div style="color: #7C88A0; margin-bottom: 12px;">🕐 ${timeStr}</div>
+          <div style="color: #7C88A0; margin-bottom: 4px;">🕐 ${timeStr}</div>
+          ${priceInfo}
           ${commentInfo}
           ${paymentInfo}
           ${canModify && !isPast ? `

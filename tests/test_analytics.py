@@ -65,12 +65,14 @@ async def test_retention_calculation(db_session):
     client1 = await client_repo.create(
         master_id=master1.id,
         telegram_id=444444,
-        name="Client 1"
+        name="Client 1",
+        phone="+79001111111"
     )
     client2 = await client_repo.create(
         master_id=master2.id,
         telegram_id=555555,
-        name="Client 2"
+        name="Client 2",
+        phone="+79002222222"
     )
     
     # Create services

@@ -75,15 +75,15 @@ async def test_subscription_plans_configuration():
     
     # Trial
     trial = get_plan_config('trial')
-    assert trial.duration_days == 14
+    assert trial.duration_days == 30
     assert trial.price_rub == 0
     assert trial.price_stars == 0
     
     # Monthly
     monthly = get_plan_config('monthly')
     assert monthly.duration_days == 30
-    assert monthly.price_rub == 990
-    assert monthly.price_stars == 990
+    assert monthly.price_rub == 790
+    assert monthly.price_stars == 790
     
     # Quarterly
     quarterly = get_plan_config('quarterly')

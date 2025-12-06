@@ -438,6 +438,7 @@ async def get_client_appointments(request: web.Request):
                 "id": app.id,
                 "service": service.name if service else "Услуга",
                 "service_id": app.service_id,
+                "service_price": service.price if service else 0,
                 "start": app.start_time.isoformat(),
                 "end": app.end_time.isoformat(),
                 "status": app.status,
@@ -857,6 +858,8 @@ async def cancel_appointment_master(request: web.Request):
     async with async_session_maker() as session:
         mrepo = MasterRepository(session)
         arepo = AppointmentRepository(session)
+        srepo = ServiceRepository(session)
+        crepo = ClientRepository(session)
         
         master = await mrepo.get_by_telegram_id(int(mid))
         if not master:
@@ -865,6 +868,10 @@ async def cancel_appointment_master(request: web.Request):
         app = await arepo.get_by_id(appointment_id)
         if not app or app.master_id != master.id:
             return web.json_response({"error": "appointment not found"}, status=404)
+        
+        # Get service and client for notification
+        service = await srepo.get_by_id(app.service_id)
+        client = await crepo.get_by_id(app.client_id)
         
         app.status = AppointmentStatus.CANCELLED.value
         await arepo.update(app)
@@ -877,6 +884,28 @@ async def cancel_appointment_master(request: web.Request):
             pass
         
         await session.commit()
+        
+        # Notify client
+        if client and client.telegram_id:
+            try:
+                tz = pytz_timezone(master.timezone or "Europe/Moscow")
+                start_local = app.start_time.replace(tzinfo=timezone.utc).astimezone(tz)
+                date_str = start_local.strftime("%d.%m.%Y в %H:%M")
+                tz_name = master.timezone or "Europe/Moscow"
+                
+                text = (
+                    f"❌ Мастер отменил запись\n\n"
+                    f"Услуга: {service.name if service else 'Услуга'}\n"
+                    f"Дата: {date_str} ({tz_name})\n"
+                )
+                if reason:
+                    text += f"Причина: {reason}\n"
+                text += f"\nВы можете записаться на другое время через бота"
+                
+                await bot.send_message(client.telegram_id, text)
+            except Exception as e:
+                logger.error(f"Failed to notify client about cancellation: {e}")
+        
         return web.json_response({"ok": True})
 
 
@@ -899,6 +928,7 @@ async def reschedule_appointment_master(request: web.Request):
         mrepo = MasterRepository(session)
         arepo = AppointmentRepository(session)
         srepo = ServiceRepository(session)
+        crepo = ClientRepository(session)
         
         master = await mrepo.get_by_telegram_id(int(mid))
         if not master:
@@ -909,7 +939,11 @@ async def reschedule_appointment_master(request: web.Request):
             return web.json_response({"error": "appointment not found"}, status=404)
         
         service = await srepo.get_by_id(app.service_id)
+        client = await crepo.get_by_id(app.client_id)
         duration = service.duration_minutes if service else 60
+        
+        # Save old time for notification
+        old_start = app.start_time
         
         # Normalize time
         try:
@@ -941,6 +975,27 @@ async def reschedule_appointment_master(request: web.Request):
             pass
         
         await session.commit()
+        
+        # Notify client
+        if client and client.telegram_id:
+            try:
+                tz = pytz_timezone(master.timezone or "Europe/Moscow")
+                old_local = old_start.replace(tzinfo=timezone.utc).astimezone(tz)
+                new_local = new_start_utc.astimezone(tz)
+                old_str = old_local.strftime("%d.%m.%Y в %H:%M")
+                new_str = new_local.strftime("%d.%m.%Y в %H:%M")
+                tz_name = master.timezone or "Europe/Moscow"
+                
+                text = (
+                    f"🔄 Мастер перенес вашу запись\n\n"
+                    f"Услуга: {service.name if service else 'Услуга'}\n"
+                    f"Было: {old_str}\n"
+                    f"Стало: {new_str} ({tz_name})"
+                )
+                await bot.send_message(client.telegram_id, text)
+            except Exception as e:
+                logger.error(f"Failed to notify client about reschedule: {e}")
+        
         return web.json_response({"ok": True})
 
 

@@ -18,7 +18,11 @@ def generate_referral_code():
 async def test_create_subscription(db_session):
     """Тест создания подписки"""
     # Создаем мастера
-    master = Master(telegram_id=123456789, phone="+79001234567", name="Test Master", referral_code="REF456789", referral_code=generate_referral_code()
+    master = Master(
+        telegram_id=123456789, 
+        phone="+79001234567", 
+        name="Test Master", 
+        referral_code=generate_referral_code()
     )
     db_session.add(master)
     await db_session.commit()
