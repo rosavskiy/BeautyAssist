@@ -153,9 +153,10 @@ async def main():
     app = register_api_routes()
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 8080)
+    # Bind to localhost only for security - nginx will proxy external requests
+    site = web.TCPSite(runner, '127.0.0.1', 8080)
     await site.start()
-    logger.info("Web server started on port 8080")
+    logger.info("Web server started on 127.0.0.1:8080 (localhost only)")
     
     # Start background tasks
     start_background_tasks()
