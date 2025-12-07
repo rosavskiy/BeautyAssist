@@ -11,6 +11,8 @@ from database.models.transaction import TransactionStatus, TransactionType
 from database.repositories.subscription import SubscriptionRepository
 from database.repositories.master import MasterRepository
 from bot.subscription_plans import get_plan_config
+from services.referral import ReferralService
+from services.agent_payout import AgentPayoutService
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +173,42 @@ class PaymentService:
                 master.is_premium = True
                 master.premium_until = subscription.end_date
                 await session.flush()
+            
+            # ✨ NEW: Process agent commission if this is a referral
+            try:
+                referral_service = ReferralService(session)
+                payout_service = AgentPayoutService(session, self.bot)
+                
+                # Check if this master was referred
+                referral = await referral_service.get_by_referred_id(master.id)
+                
+                if referral and referral.status == 'pending':
+                    # Activate referral
+                    await referral_service.activate_referral(
+                        referral_id=referral.id,
+                        referred_telegram_id=user_telegram_id
+                    )
+                    
+                    # Process commission payout to agent
+                    payout_result = await payout_service.process_referral_payout(
+                        referral=referral,
+                        subscription_amount=payment.total_amount
+                    )
+                    
+                    if payout_result['success']:
+                        logger.info(
+                            f"Agent commission paid: {payout_result['commission_stars']}⭐ "
+                            f"for referral {referral.id}"
+                        )
+                    else:
+                        logger.error(
+                            f"Agent commission failed for referral {referral.id}: "
+                            f"{payout_result.get('error')}"
+                        )
+                        
+            except Exception as e:
+                # Don't fail the whole payment if payout fails
+                logger.error(f"Error processing agent payout: {e}", exc_info=True)
             
             await session.commit()
             

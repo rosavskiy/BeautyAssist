@@ -67,6 +67,40 @@ class Referral(Base):
         comment="Days added to subscription"
     )
     
+    # Agent commission fields (NEW for agent network)
+    commission_percent: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=10,
+        server_default="10",
+        comment="Commission percentage for agent (default 10%)"
+    )
+    commission_stars: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+        comment="Commission amount in Telegram Stars"
+    )
+    payout_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+        index=True,
+        comment="pending/sent/failed"
+    )
+    payout_transaction_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        comment="Telegram payment transaction ID"
+    )
+    payout_sent_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        comment="When commission was paid to agent"
+    )
+    
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
