@@ -11,6 +11,8 @@ from aiogram.fsm.state import State, StatesGroup
 
 from database.base import get_db
 from database.repositories.admin import AdminRepository
+from database.repositories.referral import ReferralRepository
+from database.repositories.master import MasterRepository
 from bot.keyboards.admin import (
     get_admin_main_menu,
     get_masters_keyboard,

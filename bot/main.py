@@ -41,7 +41,7 @@ def register_middlewares():
 def register_handlers():
     """Register all bot handlers."""
     # Import handler registration functions
-    from bot.handlers import onboarding, master, appointments, admin, subscription, referral
+    from bot.handlers import onboarding, master, appointments, admin, subscription, referral, admin_payouts
     from bot.handlers import api as api_handlers
     from bot.middlewares.admin import AdminOnlyMiddleware
     
@@ -56,6 +56,10 @@ def register_handlers():
     admin.router.message.middleware(AdminOnlyMiddleware())
     admin.router.callback_query.middleware(AdminOnlyMiddleware())
     dp.include_router(admin.router)
+    
+    # Register admin_payouts handlers with AdminOnlyMiddleware
+    admin_payouts.router.message.middleware(AdminOnlyMiddleware())
+    dp.include_router(admin_payouts.router)
     
     # Register subscription handlers (before SubscriptionMiddleware)
     dp.include_router(subscription.router)
