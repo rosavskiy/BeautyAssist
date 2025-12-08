@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://beautyassist.ru/sitemap.xml
+
+# Запрет на индексацию технических страниц
+Disallow: /admin/
+Disallow: /api/
+Disallow: /.git/
+Disallow: /logs/
+Disallow: /database/
+Disallow: /alembic/
+
+# Запрет на индексацию служебных файлов
+Disallow: /*.env$
+Disallow: /*.log$
+Disallow: /*.pyc$
+Disallow: /__pycache__/
+
+# Разрешаем CSS и JS для правильного отображения в поисковиках
+Allow: /webapp/*.css
+Allow: /webapp/*.js
+Allow: /webapp/landing/*.css
+Allow: /webapp/landing/*.js
+
+# Crawl-delay для вежливых ботов
+Crawl-delay: 1
