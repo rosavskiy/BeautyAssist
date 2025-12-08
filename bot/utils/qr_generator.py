@@ -54,27 +54,27 @@ def generate_qr_code(data: str, box_size: int = 10, border: int = 2) -> io.Bytes
         raise
 
 
-def generate_webapp_qr(bot_username: str, master_id: int, box_size: int = 10) -> io.BytesIO:
+def generate_webapp_qr(bot_username: str, referral_code: str, box_size: int = 10) -> io.BytesIO:
     """
-    Generate QR code with link to master's booking WebApp.
+    Generate QR code with link to master's booking page (deep link).
     
     Args:
         bot_username: Telegram bot username (without @)
-        master_id: Master's ID for booking
+        referral_code: Master's referral code (e.g., '03FITDVW')
         box_size: QR code box size in pixels
     
     Returns:
         BytesIO object containing QR code PNG image
     
     Example:
-        >>> qr = generate_webapp_qr("beautyassist_bot", master_id=123)
+        >>> qr = generate_webapp_qr("beautyassist_bot", referral_code="03FITDVW")
         >>> await message.answer_photo(BufferedInputFile(qr.getvalue(), filename="qr.png"))
     """
-    # Construct WebApp URL
-    webapp_url = f"https://t.me/{bot_username}/app?startapp=book_master_{master_id}"
+    # Construct deep link URL (same format as in onboarding)
+    booking_url = f"https://t.me/{bot_username}?start={referral_code}"
     
-    logger.info(f"Generating WebApp QR code for master {master_id}")
-    return generate_qr_code(webapp_url, box_size=box_size, border=2)
+    logger.info(f"Generating booking QR code for referral code: {referral_code}")
+    return generate_qr_code(booking_url, box_size=box_size, border=2)
 
 
 def generate_referral_qr(bot_username: str, referral_code: str, box_size: int = 10) -> io.BytesIO:

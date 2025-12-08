@@ -252,21 +252,27 @@ async def cmd_qr_code(message: Message):
         
         try:
             from bot.utils.qr_generator import generate_webapp_qr
+            from bot.utils.webapp import build_webapp_link
             from aiogram.types import BufferedInputFile
             
             # Get bot username from config
             bot_username = settings.bot_username.lstrip('@') if settings.bot_username else "beautyassist_bot"
             
-            # Generate QR code
-            qr_buffer = generate_webapp_qr(bot_username=bot_username, master_id=master.id, box_size=12)
+            # Get booking link (same format as in onboarding)
+            booking_link = build_webapp_link(master)
+            
+            # Generate QR code with referral code
+            qr_buffer = generate_webapp_qr(bot_username=bot_username, referral_code=master.referral_code, box_size=12)
             
             # Send as photo
-            photo = BufferedInputFile(qr_buffer.getvalue(), filename=f"qr_master_{master.id}.png")
+            photo = BufferedInputFile(qr_buffer.getvalue(), filename=f"qr_{master.referral_code}.png")
             
             await message.answer_photo(
                 photo=photo,
                 caption=(
                     f"📱 <b>QR-код для записи к вам</b>\n\n"
+                    f"🔗 <b>Ссылка для клиентов:</b>\n"
+                    f"{booking_link}\n\n"
                     f"Покажите этот код клиентам — они смогут быстро перейти к записи, "
                     f"отсканировав его камерой телефона.\n\n"
                     f"💡 <i>Сохраните изображение и используйте в соцсетях, визитках или в салоне</i>"
@@ -291,21 +297,27 @@ async def cb_get_qr_code(call: CallbackQuery):
         
         try:
             from bot.utils.qr_generator import generate_webapp_qr
+            from bot.utils.webapp import build_webapp_link
             from aiogram.types import BufferedInputFile
             
             # Get bot username from config
             bot_username = settings.bot_username.lstrip('@') if settings.bot_username else "beautyassist_bot"
             
-            # Generate QR code
-            qr_buffer = generate_webapp_qr(bot_username=bot_username, master_id=master.id, box_size=12)
+            # Get booking link (same format as in onboarding)
+            booking_link = build_webapp_link(master)
+            
+            # Generate QR code with referral code
+            qr_buffer = generate_webapp_qr(bot_username=bot_username, referral_code=master.referral_code, box_size=12)
             
             # Send as photo
-            photo = BufferedInputFile(qr_buffer.getvalue(), filename=f"qr_master_{master.id}.png")
+            photo = BufferedInputFile(qr_buffer.getvalue(), filename=f"qr_{master.referral_code}.png")
             
             await call.message.answer_photo(
                 photo=photo,
                 caption=(
                     f"📱 <b>QR-код для записи к вам</b>\n\n"
+                    f"🔗 <b>Ссылка для клиентов:</b>\n"
+                    f"{booking_link}\n\n"
                     f"Покажите этот код клиентам — они смогут быстро перейти к записи, "
                     f"отсканировав его камерой телефона.\n\n"
                     f"💡 <i>Сохраните изображение и используйте в соцсетях, визитках или в салоне</i>"

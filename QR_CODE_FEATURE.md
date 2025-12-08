@@ -56,12 +56,19 @@
 
 QR-код содержит ссылку вида:
 ```
-https://t.me/{bot_username}/app?startapp=book_master_{master_id}
+https://t.me/{bot_username}?start={referral_code}
 ```
 
 Где:
 - `{bot_username}` - имя бота (из настроек)
-- `{master_id}` - ID мастера в системе
+- `{referral_code}` - реферальный код мастера (например, `03FITDVW`)
+
+**Это та же ссылка, что показывается при онбординге и в команде `/start`!**
+
+**Пример реальной ссылки:**
+```
+https://t.me/mybeautyassist_bot?start=03FITDVW
+```
 
 ### Генерация QR-кода
 
@@ -88,13 +95,13 @@ qr_buffer = generate_qr_code("https://example.com")
 # qr_buffer готов к отправке как photo
 ```
 
-#### `generate_webapp_qr(bot_username: str, master_id: int, box_size: int = 10) -> io.BytesIO`
+#### `generate_webapp_qr(bot_username: str, referral_code: str, box_size: int = 10) -> io.BytesIO`
 
-Генерирует QR-код со ссылкой на WebApp записи к мастеру.
+Генерирует QR-код со ссылкой на страницу записи к мастеру (deep link).
 
 **Параметры:**
 - `bot_username` - имя бота (без @)
-- `master_id` - ID мастера
+- `referral_code` - реферальный код мастера (например, `03FITDVW`)
 - `box_size` - размер боксов QR
 
 **Пример:**
@@ -102,7 +109,7 @@ qr_buffer = generate_qr_code("https://example.com")
 from bot.utils.qr_generator import generate_webapp_qr
 from aiogram.types import BufferedInputFile
 
-qr_buffer = generate_webapp_qr("beautyassist_bot", master_id=123)
+qr_buffer = generate_webapp_qr("beautyassist_bot", referral_code="03FITDVW")
 photo = BufferedInputFile(qr_buffer.getvalue(), filename="qr.png")
 await message.answer_photo(photo=photo)
 ```
@@ -127,8 +134,9 @@ await message.answer_photo(photo=photo)
 async def cmd_qr_code(message: Message):
     """Generate QR code for client booking."""
     # 1. Получить мастера из БД
-    # 2. Сгенерировать QR через generate_webapp_qr()
-    # 3. Отправить как photo с инструкцией
+    # 2. Получить ссылку для клиентов (build_webapp_link)
+    # 3. Сгенерировать QR через generate_webapp_qr(bot_username, referral_code)
+    # 4. Отправить как photo с инструкцией и ссылкой
 ```
 
 #### Callback кнопки меню

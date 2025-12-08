@@ -69,9 +69,9 @@ def test_generate_qr_code_cyrillic():
 def test_generate_webapp_qr():
     """Test WebApp QR code generation."""
     bot_username = "test_bot"
-    master_id = 123
+    referral_code = "ABC123XY"
     
-    qr_buffer = generate_webapp_qr(bot_username, master_id)
+    qr_buffer = generate_webapp_qr(bot_username, referral_code)
     
     assert isinstance(qr_buffer, io.BytesIO)
     qr_buffer.seek(0)
@@ -87,15 +87,15 @@ def test_generate_webapp_qr():
 def test_generate_webapp_qr_url_format():
     """Test that WebApp QR contains correct URL format."""
     bot_username = "beautyassist_bot"
-    master_id = 456
+    referral_code = "03FITDVW"
     
     with patch('bot.utils.qr_generator.generate_qr_code') as mock_generate:
         mock_generate.return_value = io.BytesIO(b"fake_qr")
         
-        generate_webapp_qr(bot_username, master_id)
+        generate_webapp_qr(bot_username, referral_code)
         
         # Check that generate_qr_code was called with correct URL
-        expected_url = f"https://t.me/{bot_username}/app?startapp=book_master_{master_id}"
+        expected_url = f"https://t.me/{bot_username}?start={referral_code}"
         mock_generate.assert_called_once()
         actual_url = mock_generate.call_args[0][0]
         assert actual_url == expected_url
@@ -104,10 +104,10 @@ def test_generate_webapp_qr_url_format():
 def test_generate_webapp_qr_with_box_size():
     """Test WebApp QR with custom box size."""
     bot_username = "test_bot"
-    master_id = 789
+    referral_code = "XYZ789AB"
     box_size = 20
     
-    qr_buffer = generate_webapp_qr(bot_username, master_id, box_size=box_size)
+    qr_buffer = generate_webapp_qr(bot_username, referral_code, box_size=box_size)
     
     assert isinstance(qr_buffer, io.BytesIO)
     qr_buffer.seek(0)
@@ -187,8 +187,8 @@ def test_webapp_qr_different_masters():
     """Test QR codes for different masters are different."""
     bot_username = "test_bot"
     
-    qr1 = generate_webapp_qr(bot_username, master_id=1)
-    qr2 = generate_webapp_qr(bot_username, master_id=2)
+    qr1 = generate_webapp_qr(bot_username, referral_code="CODE001")
+    qr2 = generate_webapp_qr(bot_username, referral_code="CODE002")
     
     # Buffers should contain different data
     qr1.seek(0)
