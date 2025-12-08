@@ -60,10 +60,6 @@ async def cmd_menu(message: Message):
                 text="📱 QR-код для записи", 
                 callback_data="get_qr_code"
             )],
-            [InlineKeyboardButton(
-                text="Открыть запись (для клиентов)", 
-                web_app=WebAppInfo(url=build_webapp_url_direct(master))
-            )],
         ])
         await message.answer("🎯 Главное меню", reply_markup=kb)
 
