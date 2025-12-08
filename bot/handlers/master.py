@@ -60,6 +60,10 @@ async def cmd_menu(message: Message):
                 text="📱 QR-код для записи", 
                 callback_data="get_qr_code"
             )],
+            [InlineKeyboardButton(
+                text="💬 Поддержка", 
+                callback_data="show_support_info"
+            )],
         ])
         await message.answer("🎯 Главное меню", reply_markup=kb)
 
@@ -326,6 +330,22 @@ async def cb_get_qr_code(call: CallbackQuery):
             import logging
             logging.error(f"Failed to generate QR code from callback: {e}", exc_info=True)
             await call.answer("❌ Ошибка генерации QR-кода", show_alert=True)
+
+
+@router.callback_query(F.data == "show_support_info")
+async def cb_show_support_info(call: CallbackQuery):
+    """Show support information."""
+    support_text = (
+        "💬 <b>Поддержка BeautyAssist</b>\n\n"
+        "Если у вас возникли вопросы или проблемы, отправьте команду /support\n\n"
+        "Мы получим ваше сообщение и ответим как можно скорее!\n\n"
+        "📚 Также вы можете:\n"
+        "• Посмотреть список команд через /menu\n"
+        "• Узнать о подписке через /subscription\n"
+        "• Получить QR-код для записи через /qr_code"
+    )
+    await call.message.answer(support_text)
+    await call.answer()
 
 
 @router.callback_query(F.data.startswith("set_city:"))

@@ -41,7 +41,7 @@ def register_middlewares():
 def register_handlers():
     """Register all bot handlers."""
     # Import handler registration functions
-    from bot.handlers import onboarding, master, appointments, admin, subscription, referral, admin_payouts, support
+    from bot.handlers import onboarding, master, appointments, admin, subscription, referral, admin_payouts, support, export
     from bot.handlers import api as api_handlers
     from bot.middlewares.admin import AdminOnlyMiddleware
     
@@ -69,6 +69,9 @@ def register_handlers():
     
     # Register support handlers
     dp.include_router(support.router)
+    
+    # Register export handlers (must be after subscription middleware)
+    dp.include_router(export.router)
     
     # Then register other handlers (they will use AuthMiddleware and SubscriptionMiddleware from global setup)
     onboarding.register_handlers(dp)

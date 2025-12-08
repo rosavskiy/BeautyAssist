@@ -298,7 +298,8 @@ async def on_start(message: Message, command: CommandObject):
                 "🌍 /city — Город/Таймзона\n"
                 "📱 /qr_code — QR-код для записи\n"
                 "💳 /subscription — Подписка\n"
-                "🎁 /referral — Реферальная программа\n\n"
+                "🎁 /referral — Реферальная программа\n"
+                "💬 /support — Поддержка\n\n"
                 "🔗 <b>Ссылка для клиентов:</b>\n"
                 f"{link_client or 'Не настроена'}"
             )
@@ -313,6 +314,7 @@ async def on_start(message: Message, command: CommandObject):
             welcome_text = (
                 "👋 <b>Добро пожаловать в BeautyAssist!</b>\n\n"
                 "Я помогу вам автоматизировать запись клиентов и управление записями.\n\n"
+                "💬 Если возникнут вопросы - отправьте /support\n\n"
             )
             
             if is_new_master:
@@ -379,6 +381,7 @@ async def on_start(message: Message, command: CommandObject):
             "/qr_code — QR-код для записи\n"
             "/subscription — Подписка\n"
             "/referral — Реферальная программа\n"
+            "/support — Поддержка\n"
         )
         await message.answer(text)
         # Set chat menu WebApp button (blue near input) to Master cabinet
