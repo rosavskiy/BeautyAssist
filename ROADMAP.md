@@ -162,11 +162,13 @@
 - ✅ История рассылок с результатами
 - ✅ Tracking прогресса отправки
 
-#### 4. Финансы и аналитика 🔄
-- [ ] Просмотр всех платежей
-- [ ] Неприкрепленные платежи
-- [ ] Графики роста и активности
-- [ ] Конверсия и retention metrics
+#### 4. Финансы и аналитика ✅
+- ✅ Просмотр всех платежей
+- ✅ Admin Analytics Dashboard (/webapp/admin/analytics.html)
+- ✅ AnalyticsService: Retention (Day 1/7/30), Cohort Analysis, Conversion Funnel
+- ✅ Growth metrics (DAU/WAU/MAU)
+- ✅ API endpoints: /api/admin/analytics/* (retention, cohorts, funnel, growth)
+- ⚠️ TODO: Защита API через AdminOnlyMiddleware
 
 **Использование:** `/admin` → Dashboard → Функции
 
