@@ -41,7 +41,7 @@ def register_middlewares():
 def register_handlers():
     """Register all bot handlers."""
     # Import handler registration functions
-    from bot.handlers import onboarding, master, appointments, admin, subscription, referral, admin_payouts
+    from bot.handlers import onboarding, master, appointments, admin, subscription, referral, admin_payouts, support
     from bot.handlers import api as api_handlers
     from bot.middlewares.admin import AdminOnlyMiddleware
     
@@ -66,6 +66,9 @@ def register_handlers():
     
     # Register referral handlers
     dp.include_router(referral.router)
+    
+    # Register support handlers
+    dp.include_router(support.router)
     
     # Then register other handlers (they will use AuthMiddleware and SubscriptionMiddleware from global setup)
     onboarding.register_handlers(dp)
@@ -129,6 +132,7 @@ async def setup_bot_commands():
         BotCommand(command="qr_code", description="📱 QR-код для записи"),
         BotCommand(command="subscription", description="💳 Подписка"),
         BotCommand(command="referral", description="🎁 Реферальная программа"),
+        BotCommand(command="support", description="💬 Поддержка"),
     ]
     
     await bot.set_my_commands(commands=commands, scope=BotCommandScopeDefault())

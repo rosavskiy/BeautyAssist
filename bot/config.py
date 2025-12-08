@@ -47,6 +47,12 @@ class Settings(BaseSettings):
         description="Admin Telegram IDs (comma-separated in env)"
     )
     
+    # Support
+    support_admin_id: int | None = Field(
+        None,
+        description="Telegram ID of support admin who receives support requests"
+    )
+    
     @field_validator("admin_telegram_ids", mode="before")
     @classmethod
     def parse_admin_ids(cls, v: Any) -> list[int]:
