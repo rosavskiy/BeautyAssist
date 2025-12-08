@@ -57,6 +57,10 @@ async def cmd_menu(message: Message):
                 web_app=WebAppInfo(url=f"{base_url}/webapp/master/services.html?mid={message.from_user.id}")
             )],
             [InlineKeyboardButton(
+                text="📱 QR-код для записи", 
+                callback_data="get_qr_code"
+            )],
+            [InlineKeyboardButton(
                 text="Открыть запись (для клиентов)", 
                 web_app=WebAppInfo(url=build_webapp_url_direct(master))
             )],
@@ -236,6 +240,84 @@ async def cmd_city(message: Message):
         await mrepo.update(master)
         await session.commit()
         await message.answer(f"Город сохранён: {city}. Таймзона: {tz}.")
+
+
+@router.message(Command("qr_code"))
+async def cmd_qr_code(message: Message):
+    """Generate QR code for client booking."""
+    async with async_session_maker() as session:
+        master = await MasterRepository(session).get_by_telegram_id(message.from_user.id)
+        if not master:
+            return await message.answer("Нажмите /start для регистрации")
+        
+        try:
+            from bot.utils.qr_generator import generate_webapp_qr
+            from aiogram.types import BufferedInputFile
+            
+            # Get bot username from config
+            bot_username = settings.bot_username.lstrip('@') if settings.bot_username else "beautyassist_bot"
+            
+            # Generate QR code
+            qr_buffer = generate_webapp_qr(bot_username=bot_username, master_id=master.id, box_size=12)
+            
+            # Send as photo
+            photo = BufferedInputFile(qr_buffer.getvalue(), filename=f"qr_master_{master.id}.png")
+            
+            await message.answer_photo(
+                photo=photo,
+                caption=(
+                    f"📱 <b>QR-код для записи к вам</b>\n\n"
+                    f"Покажите этот код клиентам — они смогут быстро перейти к записи, "
+                    f"отсканировав его камерой телефона.\n\n"
+                    f"💡 <i>Сохраните изображение и используйте в соцсетях, визитках или в салоне</i>"
+                ),
+                parse_mode="HTML"
+            )
+            
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to generate QR code: {e}", exc_info=True)
+            await message.answer("❌ Ошибка генерации QR-кода. Попробуйте позже.")
+
+
+@router.callback_query(F.data == "get_qr_code")
+async def cb_get_qr_code(call: CallbackQuery):
+    """Handle QR code request from menu button."""
+    async with async_session_maker() as session:
+        master = await MasterRepository(session).get_by_telegram_id(call.from_user.id)
+        if not master:
+            await call.answer("Нажмите /start для регистрации", show_alert=True)
+            return
+        
+        try:
+            from bot.utils.qr_generator import generate_webapp_qr
+            from aiogram.types import BufferedInputFile
+            
+            # Get bot username from config
+            bot_username = settings.bot_username.lstrip('@') if settings.bot_username else "beautyassist_bot"
+            
+            # Generate QR code
+            qr_buffer = generate_webapp_qr(bot_username=bot_username, master_id=master.id, box_size=12)
+            
+            # Send as photo
+            photo = BufferedInputFile(qr_buffer.getvalue(), filename=f"qr_master_{master.id}.png")
+            
+            await call.message.answer_photo(
+                photo=photo,
+                caption=(
+                    f"📱 <b>QR-код для записи к вам</b>\n\n"
+                    f"Покажите этот код клиентам — они смогут быстро перейти к записи, "
+                    f"отсканировав его камерой телефона.\n\n"
+                    f"💡 <i>Сохраните изображение и используйте в соцсетях, визитках или в салоне</i>"
+                ),
+                parse_mode="HTML"
+            )
+            await call.answer()
+            
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to generate QR code from callback: {e}", exc_info=True)
+            await call.answer("❌ Ошибка генерации QR-кода", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("set_city:"))

@@ -126,6 +126,7 @@ async def setup_bot_commands():
         BotCommand(command="clients", description="👥 Клиенты"),
         BotCommand(command="schedule", description="🕐 График работы"),
         BotCommand(command="city", description="🌍 Город/Таймзона"),
+        BotCommand(command="qr_code", description="📱 QR-код для записи"),
         BotCommand(command="subscription", description="💳 Подписка"),
         BotCommand(command="referral", description="🎁 Реферальная программа"),
     ]
