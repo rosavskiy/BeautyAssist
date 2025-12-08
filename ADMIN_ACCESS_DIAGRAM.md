@@ -91,15 +91,31 @@ class AdminOnlyMiddleware:
         return await handler(event, data)
 ```
 
-### 2. API Endpoints (⚠️ TODO)
+### 2. API Endpoints ✅ РЕАЛИЗОВАНО
 ```python
-# bot/handlers/api.py - НУЖНО ДОБАВИТЬ
-@admin_required
-async def get_retention_analytics(request):
-    # Проверка Telegram WebApp initData
-    # Проверка user_id в admin_telegram_ids
-    ...
+# bot/middlewares/admin_api.py
+@web.middleware
+async def admin_api_auth_middleware(request, handler):
+    # Защищает все /api/admin/* endpoints
+    
+    # 1. Извлекает initData из заголовка
+    init_data = request.headers.get('X-Telegram-Init-Data')
+    
+    # 2. HMAC-верификация через Bot Token
+    user = verify_telegram_webapp_data(init_data, bot_token)
+    
+    # 3. Проверка user_id в admin_telegram_ids
+    if user['id'] not in settings.admin_telegram_ids:
+        return web.json_response({'error': 'Admin access required'}, status=403)
+    
+    return await handler(request)
 ```
+
+**Файлы:**
+- `bot/middlewares/admin_api.py` - middleware
+- `bot/main.py` - регистрация в aiohttp app
+- `webapp/admin/analytics.js` - отправка initData в заголовке
+- `tests/test_admin_api_auth.py` - 10 unit tests
 
 ## 📱 Пример использования
 
@@ -162,11 +178,29 @@ async def get_retention_analytics(request):
 | Аспект | Мастер | Админ |
 |--------|--------|-------|
 | **Доступ к боту** | Кнопка "Кабинет" | Команды `/admin`, `/analytics` |
-| **WebApp URL** | `/webapp/master/*.html` | `/webapp/admin/*.html` |
-| **Функционал** | Управление своими услугами/записями | Аналитика всех пользователей |
-| **Проверка прав** | Нет (любой мастер) | `AdminOnlyMiddleware` |
+| **WebApp URL** | `/webapp-master/master.html`<br>`/webapp/master/*.html` | `/webapp/admin/analytics.html` |
+| **Функционал** | Управление своими услугами/записями/финансами | Аналитика всех пользователей |
+| **Проверка прав (бот)** | `AuthMiddleware` (регистрация) | `AdminOnlyMiddleware` (telegram_id) |
+| **Проверка прав (API)** | Проверка `mid` параметра | `admin_api_auth_middleware` (HMAC) |
 | **Данные** | Только свои | Все мастера + клиенты |
-| **Кнопки меню** | Услуги, Записи, Клиенты, Финансы | Dashboard, Мастера, Рассылка, Аналитика |
+| **Кнопки меню** | Записи, Клиенты, Услуги, Финансы | Dashboard, Мастера, Рассылка, Аналитика |
+
+## 🔐 Уровни защиты
+
+### Уровень 1: Telegram Bot Middleware
+- ✅ `AdminOnlyMiddleware` блокирует команды `/admin`, `/analytics` для не-админов
+- Проверка: `user_id in settings.admin_telegram_ids`
+
+### Уровень 2: API Middleware ✅ РЕАЛИЗОВАНО
+- ✅ `admin_api_auth_middleware` защищает `/api/admin/*` endpoints
+- HMAC-верификация Telegram WebApp initData
+- Проверка подписи через Bot Token + секрет "WebAppData"
+- Извлечение user_id и проверка в admin_telegram_ids
+- Коды ответов: 401 (invalid), 403 (not admin), 200 (success)
+
+### Уровень 3: Nginx (опционально)
+- Блокировка прямого доступа к `/admin/` (кроме `/webapp/admin/`)
+- Rate limiting для admin endpoints
 
 ## ⚙️ Конфигурация
 
@@ -186,18 +220,26 @@ ADMIN_TELEGRAM_IDS=123456789,987654321
 
 ## 🎯 Итого
 
-1. **Мастер** → Кнопка "Кабинет" → `/webapp/master/services.html`
+1. **Мастер** → Кнопка "Кабинет" → `/webapp-master/master.html` (записи, расписание) + `/webapp/master/*.html` (услуги, клиенты)
 2. **Админ** → `/admin` → "📈 Аналитика" → `/webapp/admin/analytics.html`
 3. **Админ** → `/analytics` → `/webapp/admin/analytics.html` (быстрый доступ)
 
 **Два разных интерфейса:**
-- `/webapp/master/*` - для управления своим бизнесом
-- `/webapp/admin/*` - для мониторинга всей платформы
+- `/webapp-master/` и `/webapp/master/` - для управления своим бизнесом (мастер)
+- `/webapp/admin/` - для мониторинга всей платформы (админ)
+
+**Безопасность:**
+- ✅ Bot commands: `AdminOnlyMiddleware` проверяет telegram_id
+- ✅ API endpoints: `admin_api_auth_middleware` с HMAC-верификацией
+- ✅ Tests: 10 unit tests для admin API auth
 
 ---
 
 **См. также:**
-- `ADMIN_ANALYTICS_ACCESS.md` - подробная документация
-- `TESTING_SERVICES_MIGRATION.md` - тестирование Master WebApp
-- `bot/handlers/admin.py` - код обработчиков
-- `bot/middlewares/admin.py` - проверка прав доступа
+- `ADMIN_ANALYTICS_ACCESS.md` - подробная документация (обновлено 8 дек 2025)
+- `bot/handlers/admin.py` - код обработчиков команд
+- `bot/middlewares/admin.py` - проверка прав доступа к командам
+- `bot/middlewares/admin_api.py` - проверка прав доступа к API ✅ NEW
+- `tests/test_admin_api_auth.py` - тесты безопасности ✅ NEW
+
+**Статус:** ✅ Полностью реализовано и защищено

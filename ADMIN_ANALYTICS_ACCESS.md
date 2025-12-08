@@ -51,18 +51,26 @@ Middleware применяется к:
 - `admin.router.message` - команды типа `/admin`, `/analytics`
 - `admin.router.callback_query` - callback'и типа `admin:analytics`, `admin:menu`
 
-#### API Endpoints защита
-⚠️ **TODO:** API endpoints `/api/admin/analytics/*` пока не имеют проверки авторизации!
+#### API Endpoints защита ✅
+**Реализовано:** API endpoints `/api/admin/analytics/*` защищены через `admin_api_auth_middleware`
 
-Необходимо добавить middleware или декоратор для проверки:
-1. Telegram WebApp initData
-2. Валидация подписи через Bot Token
-3. Проверка, что user_id из initData есть в admin_telegram_ids
+Защита работает следующим образом:
+1. ✅ Проверяет Telegram WebApp `initData` из заголовка `X-Telegram-Init-Data`
+2. ✅ Валидирует HMAC подпись через секрет "WebAppData" + Bot Token
+3. ✅ Извлекает `user_id` из подписанных данных
+4. ✅ Проверяет, что user_id есть в `settings.admin_telegram_ids`
 
-**Файл:** `bot/handlers/api.py`, строка 1465:
-```python
-# TODO: Add admin authentication middleware
-```
+**Файлы:** 
+- `bot/middlewares/admin_api.py` - middleware с HMAC-верификацией
+- `bot/main.py` - регистрация middleware в aiohttp app
+- `webapp/admin/analytics.js` - отправка initData в заголовке
+
+**Коды ответов:**
+- `401 Unauthorized` - нет initData или невалидная подпись
+- `403 Forbidden` - пользователь не в списке админов
+- `200 OK` - доступ разрешен
+
+**Тесты:** 10 unit tests в `tests/test_admin_api_auth.py` (все passing)
 
 ## 📊 Что видит админ в Dashboard
 
@@ -167,20 +175,24 @@ Admin → [Нажимает кнопку]
 → Открывается Mini App
 ```
 
-## ⚠️ Важные замечания
+## ✅ Важные замечания
 
 ### 1. HTTPS для Production
 Telegram требует HTTPS для WebApp в production. Для локальной разработки можно использовать HTTP, но для реального бота нужен SSL сертификат.
 
-### 2. Защита API
-⚠️ **Критически важно:** Добавить authentication middleware для API endpoints перед деплоем!
+### 2. Защита API ✅
+**Реализовано:** API endpoints защищены через `admin_api_auth_middleware` с HMAC-верификацией!
 
-Без этого любой может открыть:
+Даже если кто-то откроет:
 ```
 https://your-domain.com/webapp/admin/analytics.html
 ```
 
-И увидеть данные (если знает URL).
+Все запросы к `/api/admin/*` будут отклонены с кодом 401, так как:
+- Нет валидного `initData` от Telegram
+- Или `user_id` не в списке `admin_telegram_ids`
+
+**Безопасность:** Только админы, открывшие Dashboard через Telegram WebApp, получат доступ к данным.
 
 ### 3. CORS настройки
 Убедитесь, что в `bot/main.py` настроен CORS для aiohttp:
@@ -202,24 +214,18 @@ for route in list(app.router.routes()):
     cors.add(route)
 ```
 
-## 📝 TODO: Улучшения безопасности
+## 📝 Возможные улучшения безопасности (опционально)
 
-1. **API Authentication Middleware**
-   ```python
-   async def admin_auth_middleware(request):
-       init_data = request.headers.get('X-Telegram-Init-Data')
-       if not validate_telegram_webapp_data(init_data, bot_token):
-           return web.json_response({'error': 'Unauthorized'}, status=401)
-       
-       user_id = extract_user_id(init_data)
-       if user_id not in settings.admin_telegram_ids:
-           return web.json_response({'error': 'Forbidden'}, status=403)
-   ```
+1. **API Authentication Middleware** ✅ **ГОТОВО**
+   Реализовано в `bot/middlewares/admin_api.py`:
+   - HMAC-верификация Telegram WebApp initData
+   - Проверка user_id против admin_telegram_ids
+   - Коды ответов: 401 (invalid auth), 403 (not admin)
 
-2. **Rate Limiting**
+2. **Rate Limiting** (будущее)
    Добавить ограничение запросов к analytics endpoints (например, 60 req/min).
 
-3. **Audit Log**
+3. **Audit Log** (будущее)
    Логировать все обращения к админ API:
    - Кто (user_id)
    - Когда (timestamp)
@@ -227,5 +233,6 @@ for route in list(app.router.routes()):
 
 ---
 
-**Статус:** ✅ Реализовано  
-**Безопасность:** ⚠️ Требуется API authentication middleware
+**Статус:** ✅ Реализовано и защищено  
+**Безопасность:** ✅ API authentication middleware активен  
+**Тесты:** ✅ 10 unit tests (все passing)
