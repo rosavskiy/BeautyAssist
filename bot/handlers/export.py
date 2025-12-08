@@ -35,30 +35,6 @@ async def cmd_export_clients(message: Message, state: FSMContext):
                 "❌ Профиль не найден. Отправьте /start для регистрации."
             )
         
-        # Check if user has active PAID subscription
-        sub_repo = SubscriptionRepository(session)
-        subscription = await sub_repo.get_active_subscription(master.id)
-        
-        if not subscription:
-            return await message.answer(
-                "❌ <b>Функция доступна только с активной подпиской</b>\n\n"
-                "Экспорт базы клиентов доступен на всех платных тарифах.\n\n"
-                "📱 Используйте /subscription для оформления подписки.",
-                parse_mode="HTML"
-            )
-        
-        # Check if it's trial subscription
-        if subscription.plan_type == "trial":
-            return await message.answer(
-                "❌ <b>Функция недоступна на пробном периоде</b>\n\n"
-                "Экспорт базы клиентов доступен только на платных тарифах:\n"
-                "• Monthly (790₽/мес)\n"
-                "• Quarterly (672₽/мес)\n"
-                "• Yearly (553₽/мес)\n\n"
-                "📱 Используйте /subscription для оформления платной подписки.",
-                parse_mode="HTML"
-            )
-        
         # Get all clients
         client_repo = ClientRepository(session)
         clients = await client_repo.get_all_by_master(master.id, limit=10000)
