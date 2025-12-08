@@ -1,10 +1,10 @@
 """Tests for admin promo code creation FSM."""
 import pytest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, User
+from aiogram.types import Message, CallbackQuery, User, Chat
 
 from bot.handlers.admin import (
     PromoCodeStates,
@@ -36,6 +36,8 @@ def mock_callback():
     callback = MagicMock(spec=CallbackQuery)
     callback.message = MagicMock()
     callback.message.edit_text = AsyncMock()
+    callback.message.chat = MagicMock(spec=Chat)
+    callback.message.chat.id = 123
     callback.answer = AsyncMock()
     callback.data = ""
     callback.from_user = User(id=123, is_bot=False, first_name="Admin")
@@ -48,6 +50,8 @@ def mock_message():
     message = MagicMock(spec=Message)
     message.answer = AsyncMock()
     message.text = ""
+    message.chat = MagicMock(spec=Chat)
+    message.chat.id = 123
     message.from_user = User(id=123, is_bot=False, first_name="Admin")
     return message
 
@@ -73,9 +77,10 @@ async def test_process_promo_code_valid_code(mock_message, mock_state):
     with patch('bot.handlers.admin.get_admin_session') as mock_session:
         mock_repo = AsyncMock()
         mock_repo.get_promo_code_by_code = AsyncMock(return_value=None)
-        mock_session.return_value.__aenter__.return_value = MagicMock()
+        mock_db_session = MagicMock()
+        mock_session.return_value.__aenter__.return_value = mock_db_session
         
-        with patch('bot.handlers.admin.PromoCodeRepository', return_value=mock_repo):
+        with patch('database.repositories.promo_code.PromoCodeRepository', return_value=mock_repo):
             await process_promo_code(mock_message, mock_state)
     
     # Check code was saved in uppercase
@@ -127,9 +132,10 @@ async def test_process_promo_code_already_exists(mock_message, mock_state):
         mock_repo = AsyncMock()
         # Simulate existing code
         mock_repo.get_promo_code_by_code = AsyncMock(return_value=MagicMock())
-        mock_session.return_value.__aenter__.return_value = MagicMock()
+        mock_db_session = MagicMock()
+        mock_session.return_value.__aenter__.return_value = mock_db_session
         
-        with patch('bot.handlers.admin.PromoCodeRepository', return_value=mock_repo):
+        with patch('database.repositories.promo_code.PromoCodeRepository', return_value=mock_repo):
             await process_promo_code(mock_message, mock_state)
     
     # Should show error about duplicate
@@ -224,7 +230,12 @@ async def test_process_promo_maxuses_valid(mock_message, mock_state):
 async def test_process_promo_validdays_valid(mock_message, mock_state):
     """Test valid days input."""
     mock_message.text = "30"
-    mock_state.get_data = AsyncMock(return_value={'code': 'TEST'})
+    mock_state.get_data = AsyncMock(return_value={
+        'code': 'TEST',
+        'type': 'percent',
+        'discount_percent': 20,
+        'max_uses': 100
+    })
     
     await process_promo_validdays(mock_message, mock_state)
     
@@ -253,7 +264,7 @@ async def test_process_promo_confirm_creates_promo(mock_callback, mock_state):
         mock_db_session.commit = AsyncMock()
         mock_session.return_value.__aenter__.return_value = mock_db_session
         
-        with patch('bot.handlers.admin.PromoCodeRepository', return_value=mock_repo):
+        with patch('database.repositories.promo_code.PromoCodeRepository', return_value=mock_repo):
             await process_promo_confirm(mock_callback, mock_state)
     
     # Check promo was created
