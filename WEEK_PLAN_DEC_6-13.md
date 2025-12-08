@@ -62,7 +62,7 @@
 - ✅ Admin Analytics Dashboard создан и работает
 - ✅ API endpoints реализованы (/api/admin/analytics/*)
 - ✅ AnalyticsService полностью реализован (retention, cohorts, funnel, growth)
-- ⚠️ API endpoints не защищены middleware (TODO: добавить AdminOnlyMiddleware для /api/admin/*)
+- ✅ API endpoints защищены admin_api_auth_middleware (проверка Telegram WebApp initData + admin_telegram_ids)
 
 #### UX улучшения
 - ⚠️ Нет группировки услуг по категориям в админке (только у клиента)
@@ -74,13 +74,13 @@
 ## 🎯 Приоритеты на неделю
 
 ### Приоритет 1: ✅ Admin Analytics (ЗАВЕРШЕНО)
-**Статус:** AnalyticsService реализован, 4 API endpoint готовы:
+**Статус:** AnalyticsService реализован, 4 API endpoint готовы и защищены:
 - `/api/admin/analytics/retention` - Day 1/7/30 retention
 - `/api/admin/analytics/cohorts` - когортный анализ по неделям
 - `/api/admin/analytics/funnel` - воронка конверсии
 - `/api/admin/analytics/growth` - DAU/WAU/MAU и growth rate
 
-**TODO:** Добавить AdminOnlyMiddleware для защиты /api/admin/*
+**Безопасность:** admin_api_auth_middleware с HMAC-верификацией Telegram WebApp initData
 
 ### Приоритет 2: ✅ Миграция записей в Mini App (ЗАВЕРШЕНО)
 **Статус:** Полностью реализовано в /webapp-master/master.html:

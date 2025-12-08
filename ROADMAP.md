@@ -168,7 +168,7 @@
 - ✅ AnalyticsService: Retention (Day 1/7/30), Cohort Analysis, Conversion Funnel
 - ✅ Growth metrics (DAU/WAU/MAU)
 - ✅ API endpoints: /api/admin/analytics/* (retention, cohorts, funnel, growth)
-- ⚠️ TODO: Защита API через AdminOnlyMiddleware
+- ✅ Защита API: admin_api_auth_middleware с HMAC-верификацией Telegram WebApp initData
 
 **Использование:** `/admin` → Dashboard → Функции
 
