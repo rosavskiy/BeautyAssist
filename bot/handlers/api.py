@@ -1587,6 +1587,8 @@ async def delete_expense(request: web.Request):
 async def get_retention_analytics(request: web.Request):
     """Get retention metrics (Day 1, Day 7, Day 30).
     
+    Protected by admin_api_auth_middleware - requires Telegram WebApp auth.
+    
     Query params:
         - start_date (optional): ISO format date
         - end_date (optional): ISO format date
@@ -1598,9 +1600,6 @@ async def get_retention_analytics(request: web.Request):
             "day30": 38.1
         }
     """
-    # TODO: Add admin authentication middleware
-    # For now, anyone can access (will be protected by Telegram WebApp auth)
-    
     start_date_str = request.query.get("start_date")
     end_date_str = request.query.get("end_date")
     

@@ -78,6 +78,7 @@ def register_handlers():
 def register_api_routes():
     """Register API routes and return the application."""
     from bot.handlers import api as api_handlers
+    from bot.middlewares.admin_api import admin_api_auth_middleware
     from aiohttp import web
     
     # Middleware to handle ngrok browser warning
@@ -91,7 +92,8 @@ def register_api_routes():
         response.headers['Access-Control-Allow-Headers'] = '*'
         return response
     
-    app = web.Application(middlewares=[ngrok_middleware])
+    # Create app with middlewares (order matters: ngrok first, then admin auth)
+    app = web.Application(middlewares=[ngrok_middleware, admin_api_auth_middleware])
     api_handlers.setup_routes(app)
     
     # Static webapp files with cache busting

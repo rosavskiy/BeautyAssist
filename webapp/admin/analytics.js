@@ -2,6 +2,18 @@
 let tg = window.Telegram.WebApp;
 let charts = {};
 
+// Get auth token for admin API calls
+function getAuthHeaders() {
+    const initData = tg.initData;
+    if (!initData) {
+        console.warn('No Telegram initData available');
+        return {};
+    }
+    return {
+        'X-Telegram-Init-Data': initData
+    };
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     tg.ready();
@@ -76,7 +88,9 @@ async function loadTabData(tabName) {
 // Load Growth Metrics
 async function loadGrowthMetrics() {
     try {
-        const response = await fetch('/api/admin/analytics/growth?period=month');
+        const response = await fetch('/api/admin/analytics/growth?period=month', {
+            headers: getAuthHeaders()
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -106,7 +120,9 @@ async function loadGrowthMetrics() {
 // Load Retention Data
 async function loadRetentionData() {
     try {
-        const response = await fetch('/api/admin/analytics/retention');
+        const response = await fetch('/api/admin/analytics/retention', {
+            headers: getAuthHeaders()
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -240,7 +256,9 @@ function renderRetentionChart(data) {
 // Load Cohort Data
 async function loadCohortData() {
     try {
-        const response = await fetch('/api/admin/analytics/cohorts?weeks=8');
+        const response = await fetch('/api/admin/analytics/cohorts?weeks=8', {
+            headers: getAuthHeaders()
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -288,7 +306,9 @@ function getCohortColor(percentage) {
 // Load Funnel Data
 async function loadFunnelData() {
     try {
-        const response = await fetch('/api/admin/analytics/funnel');
+        const response = await fetch('/api/admin/analytics/funnel', {
+            headers: getAuthHeaders()
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
