@@ -55,6 +55,19 @@ button, a, .slot-btn, .day-cell, .nav-btn, .action-btn, .period-btn,
   pointer-events: none; /* Клики проходят к родительской кнопке */
 }
 
+/* Все дочерние элементы SVG тоже должны пропускать клики */
+.feather * {
+  pointer-events: none;
+}
+
+svg {
+  pointer-events: none;
+}
+
+svg * {
+  pointer-events: none;
+}
+
 /* Иконки в навигации календаря */
 .date-nav-btn .feather {
   width: 18px;
