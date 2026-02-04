@@ -139,11 +139,11 @@ function renderClients(clientsToRender) {
             
             <div class="client-stats">
                 <div class="stat-item">
-                    <span><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#A89CC9;stroke-width:2;fill:none;vertical-align:middle;margin-right:4px"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>Визитов:</span>
+                    <span>📊 Визитов:</span>
                     <span class="stat-value">${client.total_visits || 0}</span>
                 </div>
                 <div class="stat-item">
-                    <span><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#A89CC9;stroke-width:2;fill:none;vertical-align:middle;margin-right:4px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Потрачено:</span>
+                    <span>💰 Потрачено:</span>
                     <span class="stat-value">${client.total_spent || 0} ₽</span>
                 </div>
             </div>

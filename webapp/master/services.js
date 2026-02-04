@@ -163,11 +163,11 @@ function renderServices() {
             
             <div class="service-details">
                 <div class="service-info">
-                    <span class="info-label"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#A89CC9;stroke-width:2;fill:none;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Длительность:</span>
+                    <span class="info-label">⏱ Длительность:</span>
                     <span class="info-value">${service.duration_minutes} мин</span>
                 </div>
                 <div class="service-info">
-                    <span class="info-label"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#A89CC9;stroke-width:2;fill:none;vertical-align:middle;margin-right:4px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Цена:</span>
+                    <span class="info-label">💰 Цена:</span>
                     <span class="info-value">${service.price} ₽</span>
                 </div>
             </div>
@@ -178,10 +178,10 @@ function renderServices() {
 
             <div class="service-actions">
                 <button class="btn-edit" onclick="editService(${service.id})">
-                    <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;vertical-align:middle;margin-right:4px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Редактировать
+                    ✏️ Редактировать
                 </button>
                 <button class="btn-delete" onclick="openDeleteModal(${service.id}, '${escapeHtml(service.name)}')">
-                    <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;vertical-align:middle;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Удалить
+                    🗑 Удалить
                 </button>
             </div>
 

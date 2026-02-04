@@ -254,17 +254,13 @@
         card.className='card';
         const when = new Date(a.start).toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'});
         
-        // Translate status with styled icons
+        // Translate status
         let statusText = a.status;
-        const iconCheck = '<span class="status-icon success"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>';
-        const iconX = '<span class="status-icon error"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>';
-        const iconWarn = '<span class="status-icon warning"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>';
-        
         if(a.status === 'scheduled') statusText = 'Запланирована';
         else if(a.status === 'confirmed') statusText = 'Подтверждена';
-        else if(a.status === 'cancelled') statusText = iconX + 'Отменена';
-        else if(a.status === 'completed') statusText = iconCheck + 'Завершена';
-        else if(a.status === 'no_show') statusText = iconWarn + 'Не явился';
+        else if(a.status === 'cancelled') statusText = '❌ Отменена';
+        else if(a.status === 'completed') statusText = '✅ Завершена';
+        else if(a.status === 'no_show') statusText = '⚠️ Не явился';
         
         // Visual styling for completed/cancelled appointments
         if(a.is_completed) {
@@ -665,8 +661,7 @@
       if(!data.length){ el.innerHTML = '<div class="muted">Услуг пока нет. Добавьте первую!</div>'; return; }
       data.forEach(s => {
         const card = document.createElement('div'); card.className='card';
-        const editIcon = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#8B7BB5;stroke-width:2;fill:none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
-        card.innerHTML = `<div class="row" style="justify-content:space-between"><div style="font-weight:600">${s.name}</div><button class="btn-action-icon" data-id="${s.id}" onclick="openServiceEdit(${s.id})">${editIcon}</button></div>
+        card.innerHTML = `<div class="row" style="justify-content:space-between"><div style="font-weight:600">${s.name}</div><button class="icon-btn" data-id="${s.id}" onclick="openServiceEdit(${s.id})">✏️</button></div>
           <div class="muted">${s.price} ₽ • ${s.duration} мин</div>`;
         el.appendChild(card);
       });

@@ -17,47 +17,6 @@ body {
   box-sizing: border-box;
 }
 
-/* Menu icons with lavender background */
-.menu-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #E8E0F3 0%, #D4C9E8 100%);
-  border-radius: 10px;
-  margin-right: 10px;
-  flex-shrink: 0;
-}
-
-.menu-icon svg {
-  width: 18px;
-  height: 18px;
-  stroke: #7B6BA3;
-  stroke-width: 2;
-  fill: none;
-}
-
-/* Empty state icon */
-.empty-icon-styled {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #F0EDF7 0%, #E8E0F3 100%);
-  border-radius: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-}
-
-.empty-icon-styled svg {
-  width: 40px;
-  height: 40px;
-  stroke: #A89CC9;
-  stroke-width: 1.5;
-  fill: none;
-}
-
 /* Header */
 .header {
   display: flex;
@@ -76,8 +35,6 @@ body {
   letter-spacing: -0.5px;
   flex: 1;
   min-width: 0;
-  display: flex;
-  align-items: center;
 }
 
 .home-btn {
