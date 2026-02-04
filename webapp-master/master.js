@@ -145,44 +145,49 @@
   }
 
   document.addEventListener('click', (ev) => {
-    if(ev.target.id === 'calendar-close') closeCalendar();
-    if(ev.target.id === 'cal-prev'){ cal.current = new Date(cal.current.getFullYear(), cal.current.getMonth()-1, 1); renderCalendar(); }
-    if(ev.target.id === 'cal-next'){ cal.current = new Date(cal.current.getFullYear(), cal.current.getMonth()+1, 1); renderCalendar(); }
-    if(ev.target.id === 'open-settings') document.getElementById('settings-section').classList.remove('hidden');
-    if(ev.target.id === 'settings-close') document.getElementById('settings-section').classList.add('hidden');
-    if(ev.target.id === 'open-clients'){ 
+    // Используем closest() для поддержки кликов по иконкам внутри кнопок
+    const target = ev.target.closest('[id]');
+    if (!target) return;
+    const id = target.id;
+    
+    if(id === 'calendar-close') closeCalendar();
+    if(id === 'cal-prev'){ cal.current = new Date(cal.current.getFullYear(), cal.current.getMonth()-1, 1); renderCalendar(); }
+    if(id === 'cal-next'){ cal.current = new Date(cal.current.getFullYear(), cal.current.getMonth()+1, 1); renderCalendar(); }
+    if(id === 'open-settings') document.getElementById('settings-section').classList.remove('hidden');
+    if(id === 'settings-close') document.getElementById('settings-section').classList.add('hidden');
+    if(id === 'open-clients'){ 
       const url = `/webapp/master/clients.html?mid=${encodeURIComponent(mid)}`;
       window.location.href = url;
     }
-    if(ev.target.id === 'open-services'){ 
+    if(id === 'open-services'){ 
       const url = `/webapp/master/services.html?mid=${encodeURIComponent(mid)}`;
       window.location.href = url;
     }
-    if(ev.target.id === 'open-finances'){ 
+    if(id === 'open-finances'){ 
       const url = `/webapp-master/finances.html?mid=${encodeURIComponent(mid)}`;
       window.location.href = url;
     }
-    if(ev.target.id === 'add-service-btn') openServiceEdit(null);
-    if(ev.target.id === 'service-edit-close') document.getElementById('service-edit-section').classList.add('hidden');
-    if(ev.target.id === 'service-save') saveService();
-    if(ev.target.id === 'service-delete') deleteService();
-    if(ev.target.id === 'daysoff-close') document.getElementById('daysoff-section').classList.add('hidden');
-    if(ev.target.id === 'daysoff-save') saveDaysOff();
-    if(ev.target.id === 'open-dayoff-calendar') openCalendarDayOffMode();
-    if(ev.target.id === 'open-hours') openHoursModal();
-    if(ev.target.id === 'hours-close') document.getElementById('hours-section').classList.add('hidden');
-    if(ev.target.id === 'hours-save') saveHours();
-    if(ev.target.id === 'complete-confirm-close') document.getElementById('complete-confirm-section').classList.add('hidden');
-    if(ev.target.id === 'complete-no') handleCompleteNo();
-    if(ev.target.id === 'complete-yes') handleCompleteYes();
-    if(ev.target.id === 'complete-payment-close') document.getElementById('complete-payment-section').classList.add('hidden');
-    if(ev.target.id === 'complete-save') handleCompleteSave();
+    if(id === 'add-service-btn') openServiceEdit(null);
+    if(id === 'service-edit-close') document.getElementById('service-edit-section').classList.add('hidden');
+    if(id === 'service-save') saveService();
+    if(id === 'service-delete') deleteService();
+    if(id === 'daysoff-close') document.getElementById('daysoff-section').classList.add('hidden');
+    if(id === 'daysoff-save') saveDaysOff();
+    if(id === 'open-dayoff-calendar') openCalendarDayOffMode();
+    if(id === 'open-hours') openHoursModal();
+    if(id === 'hours-close') document.getElementById('hours-section').classList.add('hidden');
+    if(id === 'hours-save') saveHours();
+    if(id === 'complete-confirm-close') document.getElementById('complete-confirm-section').classList.add('hidden');
+    if(id === 'complete-no') handleCompleteNo();
+    if(id === 'complete-yes') handleCompleteYes();
+    if(id === 'complete-payment-close') document.getElementById('complete-payment-section').classList.add('hidden');
+    if(id === 'complete-save') handleCompleteSave();
     
     // Date navigation
-    if(ev.target.id === 'date-prev') changeDate(-1);
-    if(ev.target.id === 'date-today') changeDate('today');
-    if(ev.target.id === 'date-next') changeDate(1);
-    if(ev.target.id === 'date-calendar') openDatePickerCalendar();
+    if(id === 'date-prev') changeDate(-1);
+    if(id === 'date-today') changeDate('today');
+    if(id === 'date-next') changeDate(1);
+    if(id === 'date-calendar') openDatePickerCalendar();
   });
 
   function changeDate(direction) {

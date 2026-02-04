@@ -52,6 +52,7 @@ button, a, .slot-btn, .day-cell, .nav-btn, .action-btn, .period-btn,
   stroke-width: 2.5;
   fill: none;
   vertical-align: middle;
+  pointer-events: none; /* Клики проходят к родительской кнопке */
 }
 
 /* Иконки в навигации календаря */
