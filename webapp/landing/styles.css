@@ -162,7 +162,15 @@ p {
 }
 
 .logo-icon {
-    font-size: 32px;
+    width: 28px;
+    height: 28px;
+    fill: var(--primary-dark);
+    margin-right: 6px;
+}
+
+.logo-small .logo-icon {
+    width: 20px;
+    height: 20px;
 }
 
 .nav-links {
@@ -516,6 +524,11 @@ section {
     color: white;
 }
 
+/* Hide scroll hint on desktop */
+.comparison-scroll-hint {
+    display: none;
+}
+
 .comparison-cta {
     text-align: center;
     margin-top: 40px;
@@ -744,16 +757,28 @@ section {
 .pricing-features li {
     padding: 12px 0;
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: center;
+    gap: 12px;
     color: var(--text-secondary);
 }
 
 .pricing-features .feature-icon {
-    color: #9b87f5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #059669;
+    font-size: 13px;
     font-weight: 700;
-    font-size: 16px;
-    margin-top: 2px;
+}
+
+.pricing-card.featured .pricing-features .feature-icon {
+    background: linear-gradient(135deg, #7c3aed 0%, #9b87f5 100%);
+    color: white;
 }
 
 .pricing-guarantee {
@@ -960,20 +985,78 @@ section {
 }
 
 @media (max-width: 768px) {
+    /* Container overflow fix */
+    body {
+        overflow-x: hidden;
+    }
+    
+    .container {
+        padding: 0 16px;
+        max-width: 100%;
+    }
+    
     h1 {
-        font-size: 32px;
+        font-size: 28px;
     }
     
     h2 {
-        font-size: 28px;
+        font-size: 24px;
     }
     
     .nav-links {
         display: none;
     }
     
+    .nav {
+        padding: 16px 0;
+    }
+    
+    .nav .btn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    .hero {
+        padding: 40px 0 60px;
+    }
+    
+    .hero-content {
+        margin-top: 30px;
+    }
+    
+    .hero-subtitle {
+        font-size: 16px;
+    }
+    
     .hero-stats {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+    }
+    
+    /* Button fixes for mobile */
+    .btn {
+        padding: 12px 20px;
+        font-size: 14px;
+        max-width: 100%;
+    }
+    
+    .btn-large {
+        padding: 14px 24px;
+        font-size: 16px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .hero-cta .btn-large {
+        width: 100%;
     }
     
     .problems-grid,
@@ -989,16 +1072,70 @@ section {
         transform: scale(1);
     }
     
+    .pricing-card.featured:hover {
+        transform: translateY(-8px);
+    }
+    
+    /* Comparison table - horizontal scroll */
+    .comparison-section .container {
+        padding: 0 16px;
+    }
+    
+    .comparison-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -16px;
+        padding: 0 16px;
+    }
+    
+    .comparison-table > div {
+        min-width: 600px;
+    }
+    
     .comparison-header,
     .comparison-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: 120px repeat(3, 100px);
+        min-width: 420px;
+    }
+    
+    .comparison-cell {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+    
+    .comparison-cell.feature-name {
+        font-size: 12px;
+        padding-left: 12px;
     }
     
     .comparison-cell.highlight {
-        border-left: none;
-        border-right: none;
-        border-top: 3px solid var(--primary-color);
-        border-bottom: 3px solid var(--primary-color);
+        border-left: 2px solid var(--primary-color);
+        border-right: 2px solid var(--primary-color);
+    }
+    
+    .comparison-header .comparison-cell.highlight {
+        border-top: 2px solid var(--primary-color);
+    }
+    
+    .total-row .comparison-cell.highlight {
+        border-bottom: 2px solid var(--primary-color);
+    }
+    
+    /* Scroll hint for comparison table */
+    .comparison-scroll-hint {
+        display: block;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+    }
+    
+    .comparison-scroll-hint::before {
+        content: "← ";
+    }
+    
+    .comparison-scroll-hint::after {
+        content: " →";
     }
     
     .footer-content {
@@ -1009,6 +1146,56 @@ section {
     .cta-benefits {
         flex-direction: column;
         gap: 12px;
+        align-items: center;
+    }
+    
+    .cta-benefit {
+        font-size: 14px;
+    }
+    
+    .trust-badges {
+        gap: 24px;
+        justify-content: center;
+    }
+    
+    .trust-badge {
+        font-size: 12px;
+    }
+    
+    section {
+        padding: 60px 0;
+    }
+    
+    .section-subtitle {
+        font-size: 16px;
+        margin-bottom: 40px;
+    }
+    
+    /* Pricing cards on mobile */
+    .pricing-card {
+        padding: 24px;
+    }
+    
+    .price-amount {
+        font-size: 36px;
+    }
+    
+    /* Feature cards */
+    .feature-card {
+        padding: 24px;
+    }
+    
+    /* Final CTA */
+    .final-cta-box {
+        padding: 0 16px;
+    }
+    
+    .final-cta-box h2 {
+        font-size: 24px;
+    }
+    
+    .final-cta-box > p {
+        font-size: 16px;
     }
 }
 

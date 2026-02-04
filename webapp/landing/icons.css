@@ -1,0 +1,264 @@
+/* Custom SVG Icons for Landing Page */
+
+/* Icon Base Styles */
+.icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+}
+
+.icon-sm {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+}
+
+.icon-lg {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+}
+
+.icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: #7c3aed;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.icon-lg svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Problem Card Icons - Different background */
+.problem-icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.problem-icon-wrap svg {
+    width: 32px;
+    height: 32px;
+    stroke: #d97706;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* Feature Card Icons */
+.feature-icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+}
+
+.feature-icon-wrap svg {
+    width: 28px;
+    height: 28px;
+    stroke: #7c3aed;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.feature-card.featured .feature-icon-wrap {
+    background: linear-gradient(135deg, #9b87f5 0%, #7c3aed 100%);
+}
+
+.feature-card.featured .feature-icon-wrap svg {
+    stroke: white;
+}
+
+/* Trust Badge Icons */
+.trust-icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.trust-icon-wrap svg {
+    width: 18px;
+    height: 18px;
+    stroke: #16a34a;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.trust-icon-wrap.security {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.trust-icon-wrap.security svg {
+    stroke: #2563eb;
+}
+
+.trust-icon-wrap.speed {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.trust-icon-wrap.speed svg {
+    stroke: #d97706;
+}
+
+.trust-icon-wrap.support {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+}
+
+.trust-icon-wrap.support svg {
+    stroke: #7c3aed;
+}
+
+/* Logo Icon */
+.logo-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #9b87f5 0%, #7c3aed 100%);
+}
+
+.logo-icon-wrap svg {
+    width: 24px;
+    height: 24px;
+    stroke: white;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* Check/Cross Icons in Comparison */
+.icon-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.icon-check svg {
+    width: 16px;
+    height: 16px;
+    stroke: #16a34a;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.icon-cross {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.icon-cross svg {
+    width: 14px;
+    height: 14px;
+    stroke: #dc2626;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* Pricing Feature Icons */
+.pricing-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+    flex-shrink: 0;
+}
+
+.pricing-check svg {
+    width: 12px;
+    height: 12px;
+    stroke: #7c3aed;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* Step Number Alternative */
+.step-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #9b87f5 0%, #7c3aed 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: white;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* CTA Benefit Icons */
+.cta-benefit-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    margin-right: 8px;
+}
+
+.cta-benefit-icon svg {
+    width: 14px;
+    height: 14px;
+    stroke: white;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
