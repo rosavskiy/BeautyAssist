@@ -11,35 +11,31 @@ button, a, .slot-btn, .day-cell, .nav-btn, .action-btn, .period-btn,
   user-select: none;
 }
 
-/* На touch-устройствах отключаем hover-эффекты */
-@media (hover: none) and (pointer: coarse) {
-  .home-btn:hover,
-  .settings-btn:hover,
-  .section:hover,
-  .card:hover,
-  .icon-btn:hover,
-  .nav-btn:hover,
-  .day-cell:hover,
-  .slot-btn:hover,
-  .action-btn:hover,
-  .period-btn:hover,
-  .btn-add:hover,
-  .btn-icon:hover,
-  .btn-primary:hover,
-  .btn-secondary:hover,
-  .summary-cards .card:hover {
-    transform: none !important;
-    box-shadow: inherit;
-  }
-  
-  /* Быстрый active-эффект вместо hover */
-  button:active, a:active, .slot-btn:active, .day-cell:active,
-  .nav-btn:active, .action-btn:active, .period-btn:active,
-  .settings-btn:active, .icon-btn:active, .btn-primary:active,
-  .btn-secondary:active, .btn-add:active, .home-btn:active {
-    opacity: 0.7;
-    transform: scale(0.97) !important;
-  }
+/* ОТКЛЮЧАЕМ ВСЕ HOVER-АНИМАЦИИ с transform - они мешают кликам */
+.home-btn:hover,
+.settings-btn:hover,
+.section:hover,
+.card:hover,
+.icon-btn:hover,
+.nav-btn:hover,
+.day-cell:hover,
+.slot-btn:hover,
+.action-btn:hover,
+.period-btn:hover,
+.btn-add:hover,
+.btn-icon:hover,
+.btn-primary:hover,
+.btn-secondary:hover,
+.summary-cards .card:hover {
+  transform: none !important;
+}
+
+/* Быстрый active-эффект для обратной связи */
+button:active, a:active, .slot-btn:active, .day-cell:active,
+.nav-btn:active, .action-btn:active, .period-btn:active,
+.settings-btn:active, .icon-btn:active, .btn-primary:active,
+.btn-secondary:active, .btn-add:active, .home-btn:active {
+  opacity: 0.7;
 }
 
 /* ===== END MOBILE OPTIMIZATION ===== */
