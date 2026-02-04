@@ -135,7 +135,6 @@ svg * {
 }
 
 .home-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(184, 167, 214, 0.4);
 }
 
@@ -334,7 +333,6 @@ h1 {
 .settings-btn:hover {
   background: #F0EDF7;
   border-color: #A89CC9;
-  transform: translateY(-2px) scale(1.05);
   box-shadow: 0 4px 12px rgba(184, 167, 214, 0.2);
 }
 
@@ -344,12 +342,6 @@ h1 {
   background: #FFFFFF;
   border-radius: 20px;
   box-shadow: 0 2px 12px rgba(184, 167, 214, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.section:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(184, 167, 214, 0.12);
 }
 
 .card {
@@ -373,7 +365,6 @@ h1 {
 .card:hover {
   border-color: #D4C9E8;
   background: #FFFFFF;
-  transform: translateY(-1px);
 }
 
 .row {
@@ -630,7 +621,6 @@ h1 {
 }
 
 .nav-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(184, 167, 214, 0.35);
 }
 
@@ -697,7 +687,6 @@ h1 {
 .day-cell:hover {
   background: #F0EDF7;
   border-color: #D4C9E8;
-  transform: translateY(-1px);
 }
 
 .day-cell.off {
@@ -746,7 +735,6 @@ h1 {
 .slot-btn:hover:not(.unavailable) {
   background: #F0EDF7;
   border-color: #D4C9E8;
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(184, 167, 214, 0.15);
 }
 
@@ -854,12 +842,7 @@ h1 {
 }
 
 .action-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(184, 167, 214, 0.35);
-}
-
-.action-btn:active {
-  transform: translateY(0);
 }
 
 /* Button row styling */
@@ -996,8 +979,8 @@ h1 {
 }
 
 .summary-cards .card:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 24px rgba(184, 167, 214, 0.15);
+}
 
 .charts {
   display: grid;
@@ -1132,7 +1115,6 @@ h1 {
 }
 
 .btn-add:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(184, 167, 214, 0.35);
 }
 
@@ -1192,11 +1174,10 @@ h1 {
   font-size: 20px;
   cursor: pointer;
   padding: 4px;
-  transition: transform 0.2s ease;
 }
 
 .btn-icon:hover {
-  transform: scale(1.2);
+  opacity: 0.8;
 }
 
 .empty-state {
@@ -1219,7 +1200,6 @@ h1 {
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(184, 167, 214, 0.35);
 }
 
@@ -1338,7 +1318,6 @@ h1 {
 
 .btn-primary:hover {
   background: #A594C5;
-  transform: translateY(-1px);
 }
 
 .btn-secondary {
