@@ -1,4 +1,5 @@
 """Repository classes."""
+from database.repositories.base import BaseRepository
 from database.repositories.master import MasterRepository
 from database.repositories.client import ClientRepository
 from database.repositories.service import ServiceRepository
@@ -9,6 +10,7 @@ from database.repositories.subscription import SubscriptionRepository
 from database.repositories.referral import ReferralRepository
 
 __all__ = [
+    "BaseRepository",
     "MasterRepository",
     "ClientRepository",
     "ServiceRepository",

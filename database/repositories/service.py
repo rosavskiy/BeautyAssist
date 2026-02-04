@@ -5,20 +5,13 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import Service
+from database.repositories.base import BaseRepository
 
 
-class ServiceRepository:
+class ServiceRepository(BaseRepository[Service]):
     """Repository for Service model operations."""
     
-    def __init__(self, session: AsyncSession):
-        self.session = session
-    
-    async def get_by_id(self, service_id: int) -> Optional[Service]:
-        """Get service by ID."""
-        result = await self.session.execute(
-            select(Service).where(Service.id == service_id)
-        )
-        return result.scalar_one_or_none()
+    model_class = Service
     
     async def get_by_ids(self, service_ids: List[int]) -> List[Service]:
         """Get multiple services by IDs (for prefetching)."""
