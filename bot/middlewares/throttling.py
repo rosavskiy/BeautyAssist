@@ -54,9 +54,9 @@ class ThrottlingMiddleware(BaseMiddleware):
         key = f"throttle:bot:{user_id}"
         
         try:
-            # Check rate limit (5 requests per minute)
+            # Check rate limit (15 requests per minute)
             count = await self.redis.get(key)
-            if count and int(count) >= 5:
+            if count and int(count) >= 15:
                 logger.warning(
                     f"Rate limit exceeded for user {user_id}",
                     extra={"user_id": user_id}

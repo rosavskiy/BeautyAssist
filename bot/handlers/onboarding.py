@@ -89,6 +89,35 @@ def format_work_schedule(schedule: dict) -> str:
     return '; '.join(result) if result else "не установлен"
 
 
+async def set_master_commands(chat_id: int):
+    """Set bot commands menu for master."""
+    if not bot:
+        return
+    
+    commands = [
+        BotCommand(command="start", description="Приветствие и ссылки"),
+        BotCommand(command="menu", description="Главное меню"),
+        BotCommand(command="services", description="Мои услуги"),
+        BotCommand(command="appointments", description="Записи на сегодня"),
+        BotCommand(command="clients", description="Список клиентов"),
+        BotCommand(command="finances", description="Финансы"),
+        BotCommand(command="schedule", description="График работы"),
+        BotCommand(command="city", description="Город/Таймзона"),
+        BotCommand(command="qr_code", description="QR-код для записи"),
+        BotCommand(command="subscription", description="Подписка"),
+        BotCommand(command="referral", description="Реферальная программа"),
+        BotCommand(command="support", description="Поддержка"),
+    ]
+    
+    try:
+        await bot.set_my_commands(
+            commands=commands,
+            scope=BotCommandScopeChat(chat_id=chat_id)
+        )
+    except Exception as e:
+        logger.warning(f"Failed to set master commands: {e}")
+
+
 async def show_setup_complete_message(message: Message, master: Master):
     """Show completion message after onboarding."""
     from bot.utils.webapp import build_webapp_link, build_master_webapp_link
@@ -144,6 +173,9 @@ async def show_setup_complete_message(message: Message, master: Master):
             )
     except Exception:
         pass
+    
+    # Set bot commands for master
+    await set_master_commands(message.chat.id)
 
 
 @router.message(CommandStart())
@@ -303,6 +335,9 @@ async def on_start(message: Message, command: CommandObject):
                 "🔗 <b>Ссылка для клиентов:</b>\n"
                 f"{link_client or 'Не настроена'}"
             )
+            
+            # Установить меню команд для мастера
+            await set_master_commands(message.chat.id)
             
             return await message.answer(text)
         

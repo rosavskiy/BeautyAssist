@@ -41,9 +41,20 @@
     toggledOff: new Set(), // YYYY-MM-DD strings
   };
 
-  function openCalendar(onPick){
+  async function openCalendar(onPick){
     cal.onDatePick = onPick;
     cal.mode = 'reschedule';
+    // Загружаем расписание если ещё не загружено
+    if (!window.__master_schedule || !window.__master_schedule._loaded) {
+      try {
+        const data = await api(`/api/master/appointments?mid=${encodeURIComponent(mid)}`);
+        if (data && data.work_schedule) {
+          window.__master_schedule = Object.assign({}, data.work_schedule, {_loaded: true});
+        }
+      } catch (e) {
+        console.error('Failed to load schedule for calendar:', e);
+      }
+    }
     document.getElementById('calendar-section').classList.remove('hidden');
     renderCalendar();
   }
@@ -233,8 +244,8 @@
     
     const el = document.getElementById('appointments');
     el.innerHTML = '';
-    // Store schedule for calendar highlighting
-    if(data && data.work_schedule){ window.__master_schedule = data.work_schedule; }
+    // Store schedule for calendar highlighting (с флагом _loaded)
+    if(data && data.work_schedule){ window.__master_schedule = Object.assign({}, data.work_schedule, {_loaded: true}); }
     if(data && Array.isArray(data.appointments)){
       const apps = data.appointments;
       if(!apps.length){ el.textContent = 'На сегодня записей нет'; return; }
