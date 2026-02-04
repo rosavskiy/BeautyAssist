@@ -1,3 +1,35 @@
+/* Feather Icons - лавандовый стиль */
+.feather {
+  width: 20px;
+  height: 20px;
+  stroke: #8B7BB5;
+  stroke-width: 2.5;
+  fill: none;
+  vertical-align: middle;
+}
+
+/* Иконки в навигации календаря */
+.date-nav-btn .feather {
+  width: 18px;
+  height: 18px;
+  stroke: #FFFFFF;
+}
+
+/* Иконка шестеренки настроек */
+.header-actions .feather {
+  width: 24px;
+  height: 24px;
+  stroke: #8B7BB5;
+}
+
+/* Иконки в меню настроек */
+.settings-menu-btn .feather {
+  width: 24px;
+  height: 24px;
+  stroke: #8B7BB5;
+  margin-right: 8px;
+}
+
 /* Date navigation row - responsive full width */
 .date-nav-row {
   display: flex;
