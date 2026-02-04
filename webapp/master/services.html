@@ -2,17 +2,18 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Каталог услуг - BeautyAssist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="services.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="services.css?v=20260205">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <a href="/webapp-master/master.html" class="home-btn">🏠</a>
-            <h1>📚 Каталог услуг</h1>
+            <a href="/webapp-master/master.html" class="home-btn"><i data-feather="home"></i></a>
+            <h1><i data-feather="book-open"></i> Каталог услуг</h1>
             <button id="add-service-btn" class="btn-primary">+ Добавить услугу</button>
         </header>
 
@@ -26,7 +27,7 @@
 
         <!-- Empty State -->
         <div id="empty-state" class="empty-state" style="display: none;">
-            <div class="empty-icon">📋</div>
+            <div class="empty-icon"><i data-feather="file-text" style="width:48px;height:48px"></i></div>
             <h2>Каталог услуг пуст</h2>
             <p>Добавьте первую услугу в каталог, чтобы клиенты могли записаться к вам</p>
             <button class="btn-primary" onclick="openServiceModal()">+ Добавить услугу</button>
@@ -37,7 +38,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h2 id="modal-title">Добавить услугу</h2>
-                    <button class="close-btn" onclick="closeServiceModal()">&times;</button>
+                    <button class="close-btn" onclick="closeServiceModal()"><i data-feather="x"></i></button>
                 </div>
                 
                 <form id="service-form">
@@ -167,6 +168,11 @@
         </div>
     </div>
 
-    <script src="services.js"></script>
+    <script src="services.js?v=20260205"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+      });
+    </script>
 </body>
 </html>

@@ -1,4 +1,48 @@
 /* Лавандовый минимализм для клиентов */
+
+/* ===== MOBILE TOUCH OPTIMIZATION ===== */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, .client-card, .home-btn, .close-btn {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* Feather Icons */
+.feather {
+  width: 20px;
+  height: 20px;
+  stroke: #8B7BB5;
+  stroke-width: 2.5;
+  fill: none;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+.feather *, svg, svg * {
+  pointer-events: none;
+}
+
+.home-btn .feather {
+  stroke: #FFFFFF;
+}
+
+/* ОТКЛЮЧАЕМ ВСЕ HOVER-АНИМАЦИИ с transform */
+.home-btn:hover,
+.client-card:hover,
+.close-btn:hover {
+  transform: none !important;
+}
+
+/* Быстрый active-эффект */
+button:active, a:active, .client-card:active {
+  opacity: 0.7;
+}
+/* ===== END MOBILE OPTIMIZATION ===== */
+
 body {
   font-family: 'Inter', -apple-system, system-ui, sans-serif;
   margin: 0;
@@ -59,7 +103,6 @@ body {
 }
 
 .home-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(184, 167, 214, 0.4);
 }
 
@@ -107,7 +150,6 @@ body {
 }
 
 .client-card:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(184, 167, 214, 0.15);
 }
 

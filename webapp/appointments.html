@@ -2,10 +2,11 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Мои записи</title>
-  <link rel="stylesheet" href="/webapp/styles.css?v=20251205" />
+  <link rel="stylesheet" href="/webapp/styles.css?v=20260205" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
   <div id="app">
@@ -28,13 +29,13 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3>Выберите новую дату</h3>
-          <button id="reschedule-close" class="icon-btn" aria-label="Закрыть">×</button>
+          <button id="reschedule-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
         </div>
         <div class="calendar">
           <div class="calendar-nav">
-            <button id="cal-prev" class="nav-btn">‹</button>
+            <button id="cal-prev" class="nav-btn"><i data-feather="chevron-left"></i></button>
             <div id="cal-title" class="cal-title"></div>
-            <button id="cal-next" class="nav-btn">›</button>
+            <button id="cal-next" class="nav-btn"><i data-feather="chevron-right"></i></button>
           </div>
           <div class="calendar-weekdays">
             <div class="weekday">Пн</div>
@@ -55,6 +56,11 @@
     </section>
   </div>
 
-  <script src="/webapp/appointments.js"></script>
+  <script src="/webapp/appointments.js?v=20260205"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+    });
+  </script>
 </body>
 </html>

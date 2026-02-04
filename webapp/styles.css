@@ -1,4 +1,53 @@
 /* Лавандовый минимализм */
+
+/* ===== MOBILE TOUCH OPTIMIZATION ===== */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, .slot, .day-cell, .nav-btn, .icon-btn, .filter-btn, .date-btn {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* Feather Icons */
+.feather {
+  width: 20px;
+  height: 20px;
+  stroke: #8B7BB5;
+  stroke-width: 2.5;
+  fill: none;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+.feather *, svg, svg * {
+  pointer-events: none;
+}
+
+.nav-btn .feather {
+  stroke: #FFFFFF;
+}
+
+/* ОТКЛЮЧАЕМ ВСЕ HOVER-АНИМАЦИИ с transform */
+section:hover,
+.slot:hover,
+button:hover,
+.nav-btn:hover,
+.day-cell:hover,
+.icon-btn:hover,
+.filter-btn:hover {
+  transform: none !important;
+}
+
+/* Быстрый active-эффект */
+button:active, .slot:active, .day-cell:active,
+.nav-btn:active, .icon-btn:active, .filter-btn:active {
+  opacity: 0.7;
+}
+/* ===== END MOBILE OPTIMIZATION ===== */
+
 body {
   font-family: 'Inter', -apple-system, system-ui, sans-serif;
   margin: 0;
@@ -40,12 +89,6 @@ section {
   padding: 20px;
   border-radius: 20px;
   box-shadow: 0 2px 12px rgba(184, 167, 214, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-section:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(184, 167, 214, 0.15);
 }
 
 label {
@@ -115,7 +158,6 @@ select option {
 .slot:hover:not(.disabled) {
   background: #F0EDF7;
   border-color: #D4C9E8;
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(184, 167, 214, 0.15);
 }
 
@@ -124,7 +166,6 @@ select option {
   border-color: #B8A7D6;
   color: #FFFFFF;
   box-shadow: 0 4px 16px rgba(184, 167, 214, 0.35);
-  transform: translateY(-2px);
 }
 
 .slot.disabled {
@@ -161,12 +202,7 @@ button {
 }
 
 button:hover:not([disabled]) {
-  transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(184, 167, 214, 0.4);
-}
-
-button:active:not([disabled]) {
-  transform: translateY(0);
 }
 
 button[disabled] {
@@ -383,7 +419,6 @@ button.loading::after {
 }
 
 .nav-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(184, 167, 214, 0.35);
 }
 
@@ -433,7 +468,6 @@ button.loading::after {
 .day-cell:hover {
   background: #F0EDF7;
   border-color: #D4C9E8;
-  transform: translateY(-1px);
 }
 
 .day-cell.disabled {

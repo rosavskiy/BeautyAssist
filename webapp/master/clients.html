@@ -2,17 +2,18 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Клиенты - BeautyAssist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="clients.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="clients.css?v=20260205">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <a href="/webapp-master/master.html" class="home-btn">🏠</a>
-            <h1>👥 Клиенты</h1>
+            <a href="/webapp-master/master.html" class="home-btn"><i data-feather="home"></i></a>
+            <h1><i data-feather="users"></i> Клиенты</h1>
         </header>
 
         <!-- Search -->
@@ -20,7 +21,7 @@
             <input 
                 type="text" 
                 id="search-input" 
-                placeholder="🔍 Поиск по имени, телефону..." 
+                placeholder="Поиск по имени, телефону..." 
                 class="search-input"
             >
         </div>
@@ -35,7 +36,7 @@
 
         <!-- Empty State -->
         <div id="empty-state" class="empty-state" style="display: none;">
-            <div class="empty-icon">👥</div>
+            <div class="empty-icon"><i data-feather="users" style="width:48px;height:48px"></i></div>
             <h2>Список клиентов пуст</h2>
             <p>Клиенты появятся здесь после первой записи</p>
         </div>
@@ -45,7 +46,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h2 id="modal-title">История клиента</h2>
-                    <button class="close-btn" onclick="closeClientHistory()">&times;</button>
+                    <button class="close-btn" onclick="closeClientHistory()"><i data-feather="x"></i></button>
                 </div>
 
                 <!-- Client Info -->
@@ -62,6 +63,11 @@
         </div>
     </div>
 
-    <script src="clients.js"></script>
+    <script src="clients.js?v=20260205"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+      });
+    </script>
 </body>
 </html>

@@ -2,18 +2,19 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin Analytics - BeautyAssist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="analytics.css">
+    <link rel="stylesheet" href="analytics.css?v=20260205">
 </head>
 <body>
     <div class="analytics-container">
         <!-- Header -->
         <header class="header">
-            <h1>📊 Аналитика</h1>
-            <button id="refresh-btn" class="btn-refresh">🔄 Обновить</button>
+            <h1><i data-feather="bar-chart-2"></i> Аналитика</h1>
+            <button id="refresh-btn" class="btn-refresh"><i data-feather="refresh-cw"></i> Обновить</button>
         </header>
 
         <!-- Navigation Tabs -->
@@ -28,32 +29,32 @@
         <section id="overview" class="tab-content active">
             <div class="metrics-grid">
                 <div class="metric-card">
-                    <h3>👥 DAU</h3>
+                    <h3><i data-feather="users"></i> DAU</h3>
                     <p class="value" id="dau-value">-</p>
                     <span class="label">Дневная активность</span>
                 </div>
                 <div class="metric-card">
-                    <h3>📅 WAU</h3>
+                    <h3><i data-feather="calendar"></i> WAU</h3>
                     <p class="value" id="wau-value">-</p>
                     <span class="label">Недельная активность</span>
                 </div>
                 <div class="metric-card">
-                    <h3>📆 MAU</h3>
+                    <h3><i data-feather="calendar"></i> MAU</h3>
                     <p class="value" id="mau-value">-</p>
                     <span class="label">Месячная активность</span>
                 </div>
                 <div class="metric-card">
-                    <h3>📈 Рост</h3>
+                    <h3><i data-feather="trending-up"></i> Рост</h3>
                     <p class="value" id="growth-value">-</p>
                     <span class="label">Прирост за месяц</span>
                 </div>
                 <div class="metric-card">
-                    <h3>✅ Активация</h3>
+                    <h3><i data-feather="check-circle"></i> Активация</h3>
                     <p class="value" id="activation-value">-</p>
                     <span class="label">Завершили онбординг</span>
                 </div>
                 <div class="metric-card">
-                    <h3>🎯 Конверсия</h3>
+                    <h3><i data-feather="target"></i> Конверсия</h3>
                     <p class="value" id="paid-conversion-value">-</p>
                     <span class="label">Пробный → Платный</span>
                 </div>
@@ -170,6 +171,11 @@
         <div id="error-message" class="error-message"></div>
     </div>
 
-    <script src="analytics.js"></script>
+    <script src="analytics.js?v=20260205"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+      });
+    </script>
 </body>
 </html>
