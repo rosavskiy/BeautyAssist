@@ -90,13 +90,13 @@ async def test_activate_trial(db_session):
     await db_session.commit()
     
     repo = SubscriptionRepository(db_session)
-    subscription = await repo.activate_trial(master.id, trial_days=14)
+    subscription = await repo.activate_trial(master.id, trial_days=30)
     
     assert subscription is not None
     assert subscription.plan == 'trial'
     assert subscription.status == SubscriptionStatus.ACTIVE
     assert subscription.amount == 0
-    assert (subscription.end_date - subscription.start_date).days == 14
+    assert (subscription.end_date - subscription.start_date).days == 30
     
     # Проверяем, что trial отмечен как использованный
     await db_session.refresh(master)
@@ -114,7 +114,7 @@ async def test_trial_already_used(db_session):
     await db_session.commit()
     
     repo = SubscriptionRepository(db_session)
-    subscription = await repo.activate_trial(master.id, trial_days=14)
+    subscription = await repo.activate_trial(master.id, trial_days=30)
     
     assert subscription is None
 

@@ -180,7 +180,7 @@
 
 #### 1. Базовая система подписок ✅
 - ✅ Модели: Subscription, Transaction
-- ✅ Тарифы: Trial (14 дней), Monthly (990₽), Quarterly (2490₽), Yearly (8280₽)
+- ✅ Тарифы: Trial (30 дней), Monthly (990₽), Quarterly (2490₽), Yearly (8280₽)
 - ✅ SubscriptionRepository с полным CRUD
 - ✅ PaymentService с Telegram Stars
 - ✅ /subscription команда и handlers
