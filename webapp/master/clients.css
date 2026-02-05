@@ -863,6 +863,11 @@ body {
 
 .country-select-wrapper .custom-select-options {
   min-width: 130px;
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: 10000;
 }
 
 .phone-input-row input[type="tel"] {

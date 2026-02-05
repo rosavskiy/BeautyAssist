@@ -891,6 +891,14 @@ function initCustomSelect(wrapperId) {
     
     if (!trigger || !options) return;
     
+    // Position dropdown using fixed positioning
+    function positionDropdown() {
+        const rect = trigger.getBoundingClientRect();
+        options.style.left = rect.left + 'px';
+        options.style.top = (rect.bottom + 4) + 'px';
+        options.style.width = Math.max(rect.width, 130) + 'px';
+    }
+    
     trigger.addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = !options.classList.contains('hidden');
@@ -899,6 +907,7 @@ function initCustomSelect(wrapperId) {
         document.querySelectorAll('.custom-select-trigger').forEach(t => t.classList.remove('active'));
         
         if (!isOpen) {
+            positionDropdown();
             options.classList.remove('hidden');
             trigger.classList.add('active');
         }
