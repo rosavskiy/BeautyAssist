@@ -18,6 +18,7 @@ from bot.keyboards.subscription import (
     get_subscription_menu_keyboard,
     get_plans_keyboard,
     get_subscription_actions_keyboard,
+    get_payment_method_keyboard,
 )
 from services.payment import PaymentService
 
@@ -135,7 +136,29 @@ async def choose_plan(call: CallbackQuery):
 
 @router.callback_query(F.data.startswith("subscription:buy:"))
 async def buy_subscription(call: CallbackQuery, bot):
-    """Initiate payment for subscription."""
+    """Show payment method selection for subscription."""
+    plan_str = call.data.split(":")[-1]
+    
+    try:
+        plan = SubscriptionPlan(plan_str)
+    except ValueError:
+        await call.answer("Неверный тариф", show_alert=True)
+        return
+    
+    plan_config = get_plan_config(plan)
+    
+    text = f"💎 <b>Оплата: {plan_config.name}</b>\n\n"
+    text += f"💰 Стоимость: {plan_config.price_rub}₽ или {plan_config.price_stars}⭐\n\n"
+    text += "Выберите способ оплаты:"
+    
+    keyboard = get_payment_method_keyboard(plan)
+    await call.message.edit_text(text, reply_markup=keyboard)
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("stars_pay:"))
+async def pay_with_stars(call: CallbackQuery, bot):
+    """Initiate payment with Telegram Stars."""
     plan_str = call.data.split(":")[-1]
     
     try:

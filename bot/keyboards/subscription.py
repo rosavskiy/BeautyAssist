@@ -92,3 +92,29 @@ def get_plan_detail_keyboard(plan: SubscriptionPlan) -> InlineKeyboardMarkup:
     
     builder.adjust(1)
     return builder.as_markup()
+
+
+def get_payment_method_keyboard(plan: SubscriptionPlan) -> InlineKeyboardMarkup:
+    """Get payment method selection keyboard."""
+    builder = InlineKeyboardBuilder()
+    
+    # YooKassa (cards, SBP)
+    builder.button(
+        text="💳 Карта / СБП",
+        callback_data=f"yookassa_pay:{plan.value}"
+    )
+    
+    # Telegram Stars
+    builder.button(
+        text="⭐ Telegram Stars",
+        callback_data=f"stars_pay:{plan.value}"
+    )
+    
+    # Back button
+    builder.button(
+        text="🔙 К выбору тарифов",
+        callback_data="subscription:choose_plan"
+    )
+    
+    builder.adjust(1)
+    return builder.as_markup()

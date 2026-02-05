@@ -43,6 +43,7 @@ def register_handlers():
     # Import handler registration functions
     from bot.handlers import onboarding, master, appointments, admin, subscription, referral, admin_payouts, support, export
     from bot.handlers import api as api_handlers
+    from bot.handlers import yookassa_handlers
     from bot.middlewares.admin import AdminOnlyMiddleware
     
     # Inject bot instance into handlers that need it
@@ -70,6 +71,9 @@ def register_handlers():
     # Register support handlers
     dp.include_router(support.router)
     
+    # Register YooKassa payment handlers
+    dp.include_router(yookassa_handlers.router)
+    
     # Register export handlers (must be after subscription middleware)
     dp.include_router(export.router)
     
@@ -84,6 +88,7 @@ def register_handlers():
 def register_api_routes():
     """Register API routes and return the application."""
     from bot.handlers import api as api_handlers
+    from bot.handlers.api_yookassa import setup_yookassa_routes
     from bot.middlewares.admin_api import admin_api_auth_middleware
     from aiohttp import web
     
@@ -101,6 +106,9 @@ def register_api_routes():
     # Create app with middlewares (order matters: ngrok first, then admin auth)
     app = web.Application(middlewares=[ngrok_middleware, admin_api_auth_middleware])
     api_handlers.setup_routes(app)
+    
+    # Setup YooKassa webhook routes
+    setup_yookassa_routes(app)
     
     # Static webapp files with cache busting
     import time

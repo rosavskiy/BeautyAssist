@@ -13,6 +13,7 @@ from bot.subscription_plans import get_plan_config
 from services.yookassa_service import yookassa_service
 from bot.keyboards.subscription import get_subscription_keyboard
 from bot.config import settings
+from database.models.subscription import SubscriptionPlan
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +26,15 @@ async def process_yookassa_payment(callback: CallbackQuery, state: FSMContext):
     try:
         await callback.answer()
         
-        # Extract plan ID
+        # Extract plan ID and convert to enum
         plan_id = callback.data.split(":")[1]
-        plan = get_plan_config(plan_id)
-        
-        if not plan:
+        try:
+            plan_enum = SubscriptionPlan(plan_id)
+        except ValueError:
             await callback.message.answer("❌ Неверный тариф")
             return
+        
+        plan = get_plan_config(plan_enum)
         
         # Check if YooKassa is enabled
         if not yookassa_service.enabled:
