@@ -971,8 +971,11 @@
     slotsDiv.innerHTML = '<p class="muted">Загрузка...</p>';
     
     try {
-      const data = await api(`/api/slots?mid=${encodeURIComponent(mid)}&date=${bookClient.selectedDate}&service_id=${bookClient.selectedServiceId}`);
-      const slots = data.slots || [];
+      // API uses code (referral_code), service (service_id), date
+      const code = masterData.referral_code;
+      const data = await api(`/api/slots?code=${encodeURIComponent(code)}&service=${bookClient.selectedServiceId}&date=${bookClient.selectedDate}`);
+      // API returns array directly with {start, end, available}
+      const slots = Array.isArray(data) ? data : [];
       
       if (slots.length === 0) {
         slotsDiv.innerHTML = '<p class="muted">Нет свободных слотов</p>';
@@ -980,21 +983,29 @@
       }
       
       slotsDiv.innerHTML = '';
+      const slotsGrid = document.createElement('div');
+      slotsGrid.className = 'slots-grid';
+      
       slots.forEach(slot => {
         const btn = document.createElement('button');
         btn.className = 'slot-btn' + (slot.available ? '' : ' unavailable');
-        btn.textContent = slot.time;
+        // Format time from ISO string
+        const startTime = new Date(slot.start);
+        const timeLabel = startTime.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+        btn.textContent = timeLabel;
         btn.disabled = !slot.available;
         if (slot.available) {
           btn.addEventListener('click', () => {
             // Remove active from all
-            slotsDiv.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
+            slotsGrid.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            bookClient.selectedTime = slot.time;
+            bookClient.selectedTime = timeLabel; // Store HH:MM for API
+            bookClient.selectedStartISO = slot.start; // Store ISO if needed later
           });
         }
-        slotsDiv.appendChild(btn);
+        slotsGrid.appendChild(btn);
       });
+      slotsDiv.appendChild(slotsGrid);
     } catch (e) {
       console.error('Failed to load slots:', e);
       slotsDiv.innerHTML = '<p class="muted">Ошибка загрузки</p>';
