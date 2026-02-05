@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Кабинет мастера</title>
-  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-7" />
+  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-8" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -87,31 +87,35 @@
      </section>
 
      <section id="cancel-reason-section" class="modal hidden">
-       <div class="modal-content">
+       <div class="modal-content modal-centered">
          <div class="modal-header">
            <h2>Отмена записи</h2>
-           <button id="cancel-reason-close" class="icon-btn" aria-label="Закрыть">×</button>
+           <button id="cancel-reason-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
          </div>
-         <p style="font-size:14px; margin:8px 0 6px; color:#666">Причина отмены (необязательно):</p>
-         <textarea id="cancel-reason-input" 
-                   style="width:100%; padding:10px; border-radius:12px; border:2px solid #E8ECF1; font-size:14px; resize:none; height:60px; font-family:inherit" 
-                   placeholder="Клиент не пришел..."></textarea>
-         <div class="row" style="margin-top:16px; gap:12px">
-           <button id="cancel-reason-skip" class="nav-btn" style="flex:1; background:#D0D4DC; color:#2D3142">Отмена</button>
-           <button id="cancel-reason-confirm" class="nav-btn" style="flex:1">OK</button>
+         <div class="modal-body">
+           <label class="form-label">Причина отмены (необязательно):</label>
+           <textarea id="cancel-reason-input" class="form-textarea" placeholder="Клиент не пришел..."></textarea>
+           <div class="modal-actions">
+             <button id="cancel-reason-skip" class="btn-secondary">Отмена</button>
+             <button id="cancel-reason-confirm" class="btn-primary">OK</button>
+           </div>
          </div>
        </div>
      </section>
 
      <section id="complete-payment-section" class="modal hidden">
-       <div class="modal-content">
+       <div class="modal-content modal-centered">
          <div class="modal-header">
            <h2>Оплата получена</h2>
-           <button id="complete-payment-close" class="icon-btn" aria-label="Закрыть">×</button>
+           <button id="complete-payment-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
          </div>
-         <label style="margin:12px 0 8px; display:block">Оплата получена в сумме:</label>
-         <input id="payment-amount" type="number" style="width:100%; padding:12px; border-radius:12px; border:2px solid #E8ECF1; font-size:16px" placeholder="0" />
-         <button id="complete-save" class="nav-btn" style="width:100%; margin-top:16px">Сохранить</button>
+         <div class="modal-body">
+           <label class="form-label">Оплата получена в сумме:</label>
+           <input id="payment-amount" type="number" class="form-input" placeholder="0" />
+           <div class="modal-actions">
+             <button id="complete-save" class="btn-primary" style="width:100%">Сохранить</button>
+           </div>
+         </div>
        </div>
      </section>
 
