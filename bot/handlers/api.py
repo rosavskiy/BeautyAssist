@@ -2141,7 +2141,9 @@ async def start_import_contacts(request: web.Request):
             request_users=KeyboardButtonRequestUsers(
                 request_id=1,
                 user_is_bot=False,
-                max_quantity=10
+                max_quantity=10,
+                request_name=True,  # Request user's name
+                request_username=True  # Request user's username
             )
         )
         

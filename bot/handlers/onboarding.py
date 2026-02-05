@@ -699,7 +699,9 @@ async def cmd_import_contacts(message: Message):
         request_users=KeyboardButtonRequestUsers(
             request_id=1,  # Unique ID for this request
             user_is_bot=False,
-            max_quantity=10  # Allow up to 10 contacts at once
+            max_quantity=10,  # Allow up to 10 contacts at once
+            request_name=True,  # Request user's name
+            request_username=True  # Request user's username
         )
     )
     
