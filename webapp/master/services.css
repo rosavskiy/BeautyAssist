@@ -660,14 +660,8 @@ button.loading .btn-loading {
     padding: 16px;
   }
 
-  .header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .header h1 {
-    font-size: 24px;
-    min-width: 0;
+    font-size: 20px;
   }
 
   .form-row {
