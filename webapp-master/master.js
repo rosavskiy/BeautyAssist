@@ -835,14 +835,18 @@
     // Load services
     try {
       const data = await api(`/api/master/services?mid=${encodeURIComponent(mid)}`);
-      bookClient.services = (data.services || []).filter(s => s.is_active);
+      // API returns array directly, not {services: [...]}
+      const servicesArr = Array.isArray(data) ? data : (data.services || []);
+      bookClient.services = servicesArr.filter(s => s.is_active);
       
       const select = document.getElementById('book-client-service');
       select.innerHTML = '<option value="">— Выберите услугу —</option>';
       bookClient.services.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.id;
-        opt.textContent = `${s.name} (${s.duration} мин, ${s.price}₽)`;
+        // API returns duration_minutes, not duration
+        const dur = s.duration_minutes || s.duration || 0;
+        opt.textContent = `${s.name} (${dur} мин, ${s.price}₽)`;
         select.appendChild(opt);
       });
     } catch (e) {
