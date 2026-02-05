@@ -1235,6 +1235,8 @@ h1 {
 
 .modal-body input[type="number"],
 .modal-body input[type="date"],
+.modal-body input[type="text"],
+.modal-body input[type="tel"],
 .modal-body select,
 .modal-body textarea {
   width: 100%;
@@ -1327,4 +1329,29 @@ h1 {
 
 .btn-secondary:hover {
   background: #D4D9E3;
+}
+
+/* Date button for booking modal */
+.date-btn {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #E8ECF1;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #2D3142;
+  background: #FAFBFC;
+  cursor: pointer;
+  text-align: left;
+}
+
+.date-btn:hover {
+  border-color: #D4C9E8;
+  background: #F0EDF7;
+}
+
+/* Slot button styles for booking modal */
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
 }

@@ -188,6 +188,9 @@
     if(id === 'date-today') changeDate('today');
     if(id === 'date-next') changeDate(1);
     if(id === 'date-calendar') openDatePickerCalendar();
+    
+    // Book client modal (handled by separate event listeners)
+    if(id === 'open-book-client') { /* handled separately */ }
   });
 
   function changeDate(direction) {
@@ -804,6 +807,292 @@
       alert('Ошибка запроса: ' + e.message);
     }
   });
+
+  // ========== OFFLINE CLIENT BOOKING ==========
+  
+  const bookClient = {
+    services: [],
+    selectedDate: null,
+    selectedTime: null,
+    selectedServiceId: null,
+    clientId: null,
+    calCurrent: new Date()
+  };
+
+  // Open book client modal
+  document.getElementById('open-book-client')?.addEventListener('click', async () => {
+    // Reset state
+    bookClient.selectedDate = null;
+    bookClient.selectedTime = null;
+    bookClient.selectedServiceId = null;
+    bookClient.clientId = null;
+    document.getElementById('book-client-phone').value = '';
+    document.getElementById('book-client-name').value = '';
+    document.getElementById('book-client-comment').value = '';
+    document.getElementById('book-client-date-btn').textContent = 'Выберите дату';
+    document.getElementById('book-client-slots').innerHTML = '<p class="muted">Сначала выберите дату</p>';
+    
+    // Load services
+    try {
+      const data = await api(`/api/master/services?mid=${encodeURIComponent(mid)}`);
+      bookClient.services = (data.services || []).filter(s => s.is_active);
+      
+      const select = document.getElementById('book-client-service');
+      select.innerHTML = '<option value="">— Выберите услугу —</option>';
+      bookClient.services.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.name} (${s.duration} мин, ${s.price}₽)`;
+        select.appendChild(opt);
+      });
+    } catch (e) {
+      console.error('Failed to load services:', e);
+    }
+    
+    document.getElementById('book-client-section').classList.remove('hidden');
+    // Re-init feather icons for new modal
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+  });
+
+  // Close book client modal
+  document.getElementById('book-client-close')?.addEventListener('click', () => {
+    document.getElementById('book-client-section').classList.add('hidden');
+  });
+
+  // Service change - update price display
+  document.getElementById('book-client-service')?.addEventListener('change', (e) => {
+    bookClient.selectedServiceId = e.target.value ? parseInt(e.target.value) : null;
+    // Reload slots if date already selected
+    if (bookClient.selectedDate && bookClient.selectedServiceId) {
+      loadBookingSlots();
+    }
+  });
+
+  // Open calendar for booking
+  document.getElementById('book-client-date-btn')?.addEventListener('click', () => {
+    bookClient.calCurrent = new Date();
+    document.getElementById('book-client-calendar-section').classList.remove('hidden');
+    renderBookingCalendar();
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+  });
+
+  // Calendar navigation
+  document.getElementById('book-cal-prev')?.addEventListener('click', () => {
+    bookClient.calCurrent = new Date(bookClient.calCurrent.getFullYear(), bookClient.calCurrent.getMonth() - 1, 1);
+    renderBookingCalendar();
+  });
+  document.getElementById('book-cal-next')?.addEventListener('click', () => {
+    bookClient.calCurrent = new Date(bookClient.calCurrent.getFullYear(), bookClient.calCurrent.getMonth() + 1, 1);
+    renderBookingCalendar();
+  });
+  document.getElementById('book-client-calendar-close')?.addEventListener('click', () => {
+    document.getElementById('book-client-calendar-section').classList.add('hidden');
+  });
+
+  function renderBookingCalendar() {
+    const grid = document.getElementById('book-client-calendar-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    const y = bookClient.calCurrent.getFullYear();
+    const m = bookClient.calCurrent.getMonth();
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    document.getElementById('book-cal-title').textContent = `${monthNames[m]} ${y}`;
+    
+    const firstDay = new Date(y, m, 1);
+    let startWeekday = firstDay.getDay();
+    if (startWeekday === 0) startWeekday = 7;
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const today = new Date(); today.setHours(0,0,0,0);
+    
+    // Work schedule for checking working days
+    const ws = window.__master_schedule || {};
+    const weekdayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const daysOffDates = new Set(ws.days_off_dates || []);
+    
+    // Empty cells before first day
+    for (let i = 1; i < startWeekday; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'day-cell disabled';
+      grid.appendChild(empty);
+    }
+    
+    // Days of month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      cell.textContent = d;
+      
+      const cellDate = new Date(y, m, d);
+      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const weekdayName = weekdayNames[cellDate.getDay()];
+      
+      // Check if it's a working day
+      const daySchedule = ws[weekdayName] || [];
+      const isWorkingDay = daySchedule.length > 0;
+      const isDayOff = daysOffDates.has(dateStr);
+      const isPast = cellDate < today;
+      
+      if (isPast || !isWorkingDay || isDayOff) {
+        cell.classList.add('disabled');
+      } else {
+        cell.addEventListener('click', () => {
+          bookClient.selectedDate = dateStr;
+          document.getElementById('book-client-date-btn').textContent = formatDateRu(dateStr);
+          document.getElementById('book-client-calendar-section').classList.add('hidden');
+          if (bookClient.selectedServiceId) {
+            loadBookingSlots();
+          } else {
+            document.getElementById('book-client-slots').innerHTML = '<p class="muted">Выберите услугу</p>';
+          }
+        });
+      }
+      
+      if (cellDate.getTime() === today.getTime()) {
+        cell.classList.add('today');
+      }
+      
+      grid.appendChild(cell);
+    }
+  }
+
+  function formatDateRu(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    return `${parseInt(d)} ${months[parseInt(m)-1]}`;
+  }
+
+  async function loadBookingSlots() {
+    const slotsDiv = document.getElementById('book-client-slots');
+    slotsDiv.innerHTML = '<p class="muted">Загрузка...</p>';
+    
+    try {
+      const data = await api(`/api/slots?mid=${encodeURIComponent(mid)}&date=${bookClient.selectedDate}&service_id=${bookClient.selectedServiceId}`);
+      const slots = data.slots || [];
+      
+      if (slots.length === 0) {
+        slotsDiv.innerHTML = '<p class="muted">Нет свободных слотов</p>';
+        return;
+      }
+      
+      slotsDiv.innerHTML = '';
+      slots.forEach(slot => {
+        const btn = document.createElement('button');
+        btn.className = 'slot-btn' + (slot.available ? '' : ' unavailable');
+        btn.textContent = slot.time;
+        btn.disabled = !slot.available;
+        if (slot.available) {
+          btn.addEventListener('click', () => {
+            // Remove active from all
+            slotsDiv.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            bookClient.selectedTime = slot.time;
+          });
+        }
+        slotsDiv.appendChild(btn);
+      });
+    } catch (e) {
+      console.error('Failed to load slots:', e);
+      slotsDiv.innerHTML = '<p class="muted">Ошибка загрузки</p>';
+    }
+  }
+
+  // Phone input formatting
+  document.getElementById('book-client-phone')?.addEventListener('input', (e) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.startsWith('8')) val = '7' + val.slice(1);
+    if (val.startsWith('7')) {
+      let formatted = '+7';
+      if (val.length > 1) formatted += ' (' + val.slice(1, 4);
+      if (val.length > 4) formatted += ') ' + val.slice(4, 7);
+      if (val.length > 7) formatted += '-' + val.slice(7, 9);
+      if (val.length > 9) formatted += '-' + val.slice(9, 11);
+      e.target.value = formatted;
+    }
+  });
+
+  // Save booking
+  document.getElementById('book-client-save')?.addEventListener('click', async () => {
+    const phone = document.getElementById('book-client-phone').value.trim();
+    const name = document.getElementById('book-client-name').value.trim();
+    const comment = document.getElementById('book-client-comment').value.trim();
+    
+    if (!phone || phone.length < 12) {
+      alert('Введите номер телефона');
+      return;
+    }
+    if (!name) {
+      alert('Введите имя клиента');
+      return;
+    }
+    if (!bookClient.selectedServiceId) {
+      alert('Выберите услугу');
+      return;
+    }
+    if (!bookClient.selectedDate) {
+      alert('Выберите дату');
+      return;
+    }
+    if (!bookClient.selectedTime) {
+      alert('Выберите время');
+      return;
+    }
+    
+    try {
+      // Step 1: Create or get client
+      const clientRes = await fetch('/api/master/client/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mid, phone, name })
+      });
+      
+      if (!clientRes.ok) {
+        const err = await clientRes.json();
+        alert('Ошибка: ' + (err.error || 'Не удалось создать клиента'));
+        return;
+      }
+      
+      const clientData = await clientRes.json();
+      const clientId = clientData.client.id;
+      
+      // Step 2: Create appointment
+      const bookRes = await fetch('/api/master/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mid,
+          client_id: clientId,
+          service_id: bookClient.selectedServiceId,
+          date: bookClient.selectedDate,
+          time: bookClient.selectedTime,
+          comment
+        })
+      });
+      
+      if (!bookRes.ok) {
+        const err = await bookRes.json();
+        alert('Ошибка: ' + (err.error || 'Не удалось создать запись'));
+        return;
+      }
+      
+      const bookData = await bookRes.json();
+      
+      // Success!
+      document.getElementById('book-client-section').classList.add('hidden');
+      showSuccessTick();
+      loadAppointments();
+      
+      // Show info
+      const isNew = clientData.is_new ? '(новый клиент)' : '';
+      console.log(`Записан ${clientData.client.name} ${isNew} на ${bookClient.selectedDate} ${bookClient.selectedTime}`);
+      
+    } catch (e) {
+      console.error('Booking error:', e);
+      alert('Ошибка: ' + e.message);
+    }
+  });
+
+  // ========== END OFFLINE CLIENT BOOKING ==========
 
   loadAppointments().catch(e => status('appointments error', e));
 })();

@@ -66,6 +66,8 @@ def setup_routes(app: web.Application):
     # Master API - Clients
     app.router.add_get('/api/master/clients', get_master_clients)
     app.router.add_get('/api/master/client/history', get_client_history)
+    app.router.add_post('/api/master/client/create', create_offline_client)
+    app.router.add_post('/api/master/book', master_book_appointment)
     
     # Master API - Services
     app.router.add_get('/api/master/services', get_master_services)
@@ -1705,3 +1707,209 @@ async def get_growth_analytics(request: web.Request):
         growth_data = await analytics_service.get_growth_metrics(period=period)
         
         return web.json_response(growth_data)
+
+
+# ========== Master Offline Booking API ==========
+
+def normalize_phone(phone: str) -> str:
+    """Normalize phone number to +7XXXXXXXXXX format."""
+    digits = ''.join(c for c in phone if c.isdigit())
+    if digits.startswith('8') and len(digits) == 11:
+        digits = '7' + digits[1:]
+    elif len(digits) == 10:
+        digits = '7' + digits
+    return '+' + digits if digits else ''
+
+
+async def create_offline_client(request: web.Request):
+    """Create or get existing client by phone number (for offline booking).
+    
+    Request body:
+        {
+            "mid": master_telegram_id,
+            "phone": "+79001234567",
+            "name": "Имя клиента"
+        }
+    
+    Returns:
+        {"ok": true, "client": {...}, "is_new": true/false}
+    """
+    payload = await request.json()
+    mid = payload.get("mid")
+    phone = payload.get("phone", "").strip()
+    name = payload.get("name", "").strip()
+    
+    if not mid or not phone or not name:
+        return web.json_response({"error": "mid, phone, name required"}, status=400)
+    
+    # Normalize phone
+    normalized_phone = normalize_phone(phone)
+    if len(normalized_phone) < 11:
+        return web.json_response({"error": "Invalid phone number"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        crepo = ClientRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        # Try to find existing client by phone for this master
+        existing = await session.execute(
+            select(Client).where(
+                and_(
+                    Client.master_id == master.id,
+                    Client.phone == normalized_phone
+                )
+            )
+        )
+        client = existing.scalar_one_or_none()
+        
+        is_new = False
+        if client:
+            # Update name if empty
+            if not client.name or client.name == "Клиент":
+                client.name = name
+                await crepo.update(client)
+                await session.commit()
+        else:
+            # Create new offline client
+            client = Client(
+                master_id=master.id,
+                telegram_id=None,  # Offline client - no Telegram
+                telegram_username=None,
+                name=name,
+                phone=normalized_phone,
+                source="offline",  # Mark as offline-created
+                notes=None,
+                total_visits=0,
+                total_spent=0
+            )
+            session.add(client)
+            await session.commit()
+            await session.refresh(client)
+            is_new = True
+        
+        return web.json_response({
+            "ok": True,
+            "client": {
+                "id": client.id,
+                "name": client.name,
+                "phone": client.phone,
+                "telegram_id": client.telegram_id,
+                "source": client.source,
+                "total_visits": client.total_visits
+            },
+            "is_new": is_new
+        })
+
+
+async def master_book_appointment(request: web.Request):
+    """Create appointment by master for offline client.
+    
+    Request body:
+        {
+            "mid": master_telegram_id,
+            "client_id": client_id,
+            "service_id": service_id,
+            "date": "2026-02-05",
+            "time": "14:00",
+            "comment": "optional comment"
+        }
+    
+    Returns:
+        {"ok": true, "appointment_id": 123}
+    """
+    payload = await request.json()
+    mid = payload.get("mid")
+    client_id = payload.get("client_id")
+    service_id = payload.get("service_id")
+    date_str = payload.get("date")
+    time_str = payload.get("time")
+    comment = payload.get("comment", "")
+    
+    if not all([mid, client_id, service_id, date_str, time_str]):
+        return web.json_response(
+            {"error": "mid, client_id, service_id, date, time required"}, 
+            status=400
+        )
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        srepo = ServiceRepository(session)
+        crepo = ClientRepository(session)
+        arepo = AppointmentRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        service = await srepo.get_by_id(int(service_id))
+        if not service or service.master_id != master.id:
+            return web.json_response({"error": "service not found"}, status=404)
+        
+        client = await crepo.get_by_id(int(client_id))
+        if not client or client.master_id != master.id:
+            return web.json_response({"error": "client not found"}, status=404)
+        
+        # Parse datetime in master's timezone
+        tz = pytz_timezone(master.timezone or 'Europe/Moscow')
+        try:
+            local_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+            local_dt = tz.localize(local_dt)
+            utc_start = local_dt.astimezone(timezone.utc)
+        except Exception as e:
+            return web.json_response({"error": f"Invalid date/time: {e}"}, status=400)
+        
+        utc_end = utc_start + timedelta(minutes=service.duration_minutes)
+        
+        # Check for conflicts
+        conflicts = await session.execute(
+            select(Appointment).where(
+                and_(
+                    Appointment.master_id == master.id,
+                    Appointment.status.notin_(['cancelled', 'no_show']),
+                    Appointment.start_time < utc_end,
+                    Appointment.end_time > utc_start
+                )
+            )
+        )
+        if conflicts.scalars().first():
+            return web.json_response({"error": "Time slot already booked"}, status=409)
+        
+        # Create appointment
+        appointment = Appointment(
+            master_id=master.id,
+            client_id=client.id,
+            service_id=service.id,
+            start_time=utc_start,
+            end_time=utc_end,
+            status=AppointmentStatus.CONFIRMED.value,
+            comment=comment or None,
+            created_by="master"  # Mark as created by master
+        )
+        session.add(appointment)
+        await session.commit()
+        await session.refresh(appointment)
+        
+        # Create reminders if client has Telegram
+        if client.telegram_id:
+            try:
+                await create_appointment_reminders(session, appointment)
+            except Exception as e:
+                logger.warning(f"Failed to create reminders: {e}")
+        
+        logger.info(
+            f"Master {master.id} booked appointment {appointment.id} "
+            f"for offline client {client.id}"
+        )
+        
+        return web.json_response({
+            "ok": True,
+            "appointment_id": appointment.id,
+            "client_name": client.name,
+            "service_name": service.name,
+            "start_time": utc_start.isoformat()
+        })
+

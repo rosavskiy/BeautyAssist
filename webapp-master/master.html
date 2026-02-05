@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Кабинет мастера</title>
-  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205" />
+  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-2" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -15,9 +15,11 @@
       <button id="open-settings" class="settings-btn" aria-label="Настройки" title="Настройки"><i data-feather="settings"></i></button>
     </div>
     <div class="section">
-      <div style="margin-bottom:16px">
-        <h2 id="appointments-title" style="margin:0 0 12px 0">Записи на сегодня</h2>
-        <div class="date-nav-row">
+      <div style="margin-bottom:16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <h2 id="appointments-title" style="margin:0">Записи на сегодня</h2>
+        <button id="open-book-client" class="nav-btn" style="background: linear-gradient(135deg, #7B61A8 0%, #6B5494 100%);"><i data-feather="user-plus"></i> Записать</button>
+      </div>
+      <div class="date-nav-row" style="margin-bottom: 16px;">
           <button id="date-prev" class="nav-btn date-nav-btn"><i data-feather="chevron-left"></i></button>
           <button id="date-today" class="nav-btn date-nav-btn date-today-btn">Сегодня</button>
           <button id="date-next" class="nav-btn date-nav-btn"><i data-feather="chevron-right"></i></button>
@@ -198,8 +200,69 @@
          </div>
        </div>
      </section>
+
+     <!-- Book Offline Client Modal -->
+     <section id="book-client-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>Записать клиента</h2>
+           <button id="book-client-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
+         </div>
+         <div class="modal-body">
+           <label>Телефон клиента *</label>
+           <input type="tel" id="book-client-phone" placeholder="+7 (999) 123-45-67" inputmode="tel" autocomplete="tel" />
+           
+           <label>Имя клиента *</label>
+           <input type="text" id="book-client-name" placeholder="Имя" />
+           
+           <label>Услуга *</label>
+           <select id="book-client-service"></select>
+           
+           <label>Дата *</label>
+           <button id="book-client-date-btn" class="date-btn">Выберите дату</button>
+           
+           <label>Время *</label>
+           <div id="book-client-slots" class="slots-grid"></div>
+           
+           <label>Комментарий</label>
+           <textarea id="book-client-comment" placeholder="Дополнительная информация..." rows="2"></textarea>
+           
+           <div style="margin-top: 20px; display: flex; gap: 12px;">
+             <button id="book-client-save" class="btn-primary" style="flex: 1;">Записать</button>
+           </div>
+         </div>
+       </div>
+     </section>
+
+     <!-- Book Client Calendar Modal -->
+     <section id="book-client-calendar-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>Выберите дату</h2>
+           <button id="book-client-calendar-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
+         </div>
+         <div class="calendar">
+           <div class="calendar-nav">
+             <button id="book-cal-prev" class="nav-btn"><i data-feather="chevron-left"></i></button>
+             <div id="book-cal-title" class="cal-title"></div>
+             <button id="book-cal-next" class="nav-btn"><i data-feather="chevron-right"></i></button>
+           </div>
+           <div class="calendar-weekdays">
+             <div class="weekday">Пн</div>
+             <div class="weekday">Вт</div>
+             <div class="weekday">Ср</div>
+             <div class="weekday">Чт</div>
+             <div class="weekday">Пт</div>
+             <div class="weekday">Сб</div>
+             <div class="weekday">Вс</div>
+           </div>
+           <div class="calendar-grid" id="book-client-calendar-grid"></div>
+         </div>
+       </div>
+     </section>
+
   </div>
-  <script src="/webapp-master/master.js?v=20260205"></script>
+  <script src="/webapp-master/master.js?v=20260205-2"></script>
   <script>
     // Инициализация Feather Icons
     document.addEventListener('DOMContentLoaded', function() {
