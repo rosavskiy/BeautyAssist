@@ -256,6 +256,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .modal-content {
@@ -270,6 +271,7 @@ body {
   padding: 24px;
   animation: slideUp 0.3s ease;
   box-sizing: border-box;
+  margin: 0 auto;
 }
 
 @keyframes slideUp {
@@ -324,16 +326,48 @@ body {
 }
 
 .client-info-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 12px;
+}
+
+.client-info-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
 .client-info-name {
   font-size: 18px;
   font-weight: 600;
   color: #2D3142;
+}
+
+.client-link {
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.client-link:active {
+  opacity: 0.7;
+}
+
+.username-link {
+  font-size: 15px;
+  color: #8B7BB5;
+  font-weight: 500;
+}
+
+.client-info-phone-row {
+  margin-top: 6px;
+}
+
+.phone-link {
+  font-size: 15px;
+  color: #5C6478;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .client-info-phone {

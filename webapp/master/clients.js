@@ -219,12 +219,28 @@ async function openClientHistory(clientId) {
         // Update modal title
         document.getElementById('modal-title').textContent = `История: ${client.name}`;
 
+        // Build username link
+        let usernameHtml = '';
+        if (client.username) {
+            usernameHtml = `<a href="https://t.me/${escapeHtml(client.username)}" target="_blank" class="client-link username-link">@${escapeHtml(client.username)}</a>`;
+        }
+        
+        // Build phone link
+        let phoneHtml = '';
+        if (client.phone) {
+            const cleanPhone = client.phone.replace(/[^+\d]/g, '');
+            phoneHtml = `<a href="tel:${cleanPhone}" class="client-link phone-link">📞 ${escapeHtml(client.phone)}</a>`;
+        }
+
         // Render client info
         const infoEl = document.getElementById('client-info');
         infoEl.innerHTML = `
             <div class="client-info-header">
-                <div class="client-info-name">${escapeHtml(client.name)}</div>
-                <div class="client-info-phone">${escapeHtml(client.phone)}</div>
+                <div class="client-info-name-row">
+                    <span class="client-info-name">${escapeHtml(client.name)}</span>
+                    ${usernameHtml}
+                </div>
+                ${phoneHtml ? `<div class="client-info-phone-row">${phoneHtml}</div>` : ''}
             </div>
             <div class="client-info-stats">
                 Всего визитов: ${client.total_visits || 0} • Потрачено: ${client.total_spent || 0} ₽
