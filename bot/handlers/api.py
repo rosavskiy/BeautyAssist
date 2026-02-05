@@ -1904,9 +1904,57 @@ async def master_book_appointment(request: web.Request):
             except Exception as e:
                 logger.warning(f"Failed to create reminders: {e}")
         
+        # Send notification to client
+        notification_sent = False
+        notification_method = None
+        
+        if client.telegram_id:
+            # Client is in Telegram - send notification
+            try:
+                from bot.handlers.onboarding import bot
+                from bot.config import settings
+                
+                # Format date/time for notification
+                local_start = utc_start.astimezone(tz)
+                date_fmt = local_start.strftime("%d.%m.%Y")
+                time_fmt = local_start.strftime("%H:%M")
+                
+                notification_text = (
+                    f"📅 <b>Вас записали на приём!</b>\n\n"
+                    f"👤 Мастер: <b>{master.name}</b>\n"
+                    f"💅 Услуга: <b>{service.name}</b>\n"
+                    f"📆 Дата: <b>{date_fmt}</b>\n"
+                    f"🕐 Время: <b>{time_fmt}</b>\n"
+                    f"💰 Стоимость: <b>{service.price} ₽</b>\n"
+                )
+                
+                if comment:
+                    notification_text += f"\n💬 Комментарий: {comment}"
+                
+                notification_text += "\n\n✅ Запись подтверждена автоматически."
+                
+                if bot:
+                    await bot.send_message(
+                        chat_id=client.telegram_id,
+                        text=notification_text,
+                        parse_mode="HTML"
+                    )
+                    notification_sent = True
+                    notification_method = "telegram"
+                    logger.info(f"Sent booking notification to client {client.id} via Telegram")
+                    
+            except Exception as e:
+                logger.warning(f"Failed to send notification to client: {e}")
+        
+        elif client.telegram_username:
+            # Client has username but not telegram_id - we can't message them directly
+            # Return info to master so they can share the booking
+            notification_method = "username_only"
+            logger.info(f"Client {client.id} has username but no telegram_id, cannot notify directly")
+        
         logger.info(
             f"Master {master.id} booked appointment {appointment.id} "
-            f"for offline client {client.id}"
+            f"for client {client.id} (notification: {notification_method})"
         )
         
         return web.json_response({
@@ -1914,7 +1962,11 @@ async def master_book_appointment(request: web.Request):
             "appointment_id": appointment.id,
             "client_name": client.name,
             "service_name": service.name,
-            "start_time": utc_start.isoformat()
+            "start_time": utc_start.isoformat(),
+            "notification_sent": notification_sent,
+            "notification_method": notification_method,
+            "client_telegram_id": client.telegram_id,
+            "client_username": client.telegram_username
         })
 
 

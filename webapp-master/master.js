@@ -1178,9 +1178,25 @@
       document.getElementById('selected-client-info')?.classList.add('hidden');
       document.getElementById('manual-client-fields').style.display = '';
       
-      // Show info
-      const isNew = isNewClient ? '(новый клиент)' : '';
-      console.log(`Записан ${clientName} ${isNew} на ${bookClient.selectedDate} ${bookClient.selectedTime}`);
+      // Show notification status to master
+      if (bookData.notification_sent) {
+        setTimeout(() => {
+          alert(`✅ Клиент ${clientName} уведомлён о записи в Telegram!`);
+        }, 500);
+      } else if (bookData.notification_method === 'username_only' && bookData.client_username) {
+        setTimeout(() => {
+          const sendLink = confirm(
+            `⚠️ Клиент @${bookData.client_username} ещё не начинал диалог с ботом.\n\n` +
+            `Отправить ему ссылку для подключения?`
+          );
+          if (sendLink) {
+            // Open Telegram to send message
+            window.open(`https://t.me/${bookData.client_username}`, '_blank');
+          }
+        }, 500);
+      }
+      
+      console.log(`Записан ${clientName} на ${bookClient.selectedDate} ${bookClient.selectedTime}`);
       
     } catch (e) {
       console.error('Booking error:', e);
