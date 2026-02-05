@@ -6,7 +6,7 @@
     <title>Клиенты - BeautyAssist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
-    <link rel="stylesheet" href="clients.css?v=20260205-2">
+    <link rel="stylesheet" href="clients.css?v=20260205-3">
 </head>
 <body>
     <div class="container">
@@ -34,6 +34,16 @@
                 placeholder="Поиск по имени, телефону..." 
                 class="search-input"
             >
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button id="create-client-btn" class="action-btn">
+                <i data-feather="user-plus"></i> Создать
+            </button>
+            <button id="import-contacts-btn" class="action-btn">
+                <i data-feather="download"></i> Импорт
+            </button>
         </div>
 
         <!-- Clients List -->
@@ -110,6 +120,83 @@
             </div>
         </div>
 
+        <!-- Create Client Modal -->
+        <div id="create-client-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Новый клиент</h2>
+                    <button class="close-btn" onclick="closeCreateModal()"><i data-feather="x"></i></button>
+                </div>
+                <div class="form-group">
+                    <label>Имя *</label>
+                    <input type="text" id="create-client-name" placeholder="Имя клиента">
+                </div>
+                <div class="form-group">
+                    <label>Телефон *</label>
+                    <div class="phone-input-row">
+                        <select id="create-client-country" class="country-select">
+                            <option value="+7" selected>🇷🇺 +7</option>
+                            <option value="+375">🇧🇾 +375</option>
+                            <option value="+380">🇺🇦 +380</option>
+                            <option value="+1">🇺🇸 +1</option>
+                            <option value="+44">🇬🇧 +44</option>
+                            <option value="+49">🇩🇪 +49</option>
+                            <option value="+33">🇫🇷 +33</option>
+                            <option value="+90">🇹🇷 +90</option>
+                            <option value="+971">🇦🇪 +971</option>
+                            <option value="+995">🇬🇪 +995</option>
+                            <option value="+374">🇦🇲 +374</option>
+                            <option value="">Другой</option>
+                        </select>
+                        <input type="tel" id="create-client-phone" placeholder="999 123-45-67" inputmode="tel">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeCreateModal()">Отмена</button>
+                    <button class="btn-primary" onclick="createNewClient()">Создать</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Import Contacts Modal -->
+        <div id="import-contacts-modal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Импорт контактов</h2>
+                    <button class="close-btn" onclick="closeImportModal()"><i data-feather="x"></i></button>
+                </div>
+                
+                <!-- Import Methods -->
+                <div class="import-methods">
+                    <button id="pick-contacts-btn" class="import-method-btn">
+                        <i data-feather="smartphone"></i>
+                        <span>Из телефонной книги</span>
+                    </button>
+                    <button id="manual-add-btn" class="import-method-btn">
+                        <i data-feather="plus-circle"></i>
+                        <span>Добавить вручную</span>
+                    </button>
+                </div>
+                
+                <!-- Contacts to import list -->
+                <div id="import-contacts-list" class="import-contacts-list hidden">
+                    <div class="import-list-header">
+                        <label>
+                            <input type="checkbox" id="import-select-all"> Выбрать все
+                        </label>
+                        <span id="import-selected-count">0 выбрано</span>
+                    </div>
+                    <div id="contacts-to-import" class="contacts-to-import"></div>
+                </div>
+                
+                <!-- Import Actions -->
+                <div id="import-actions" class="form-actions hidden">
+                    <button class="btn-secondary" onclick="clearImportList()">Очистить</button>
+                    <button class="btn-primary" onclick="importSelectedContacts()">Импортировать</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Error Message -->
         <div id="error-toast" class="toast error-toast">
             <span id="error-message"></span>
@@ -121,7 +208,7 @@
         </div>
     </div>
 
-    <script src="clients.js?v=20260205-2"></script>
+    <script src="clients.js?v=20260205-3"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });

@@ -520,6 +520,266 @@ function showSuccess(message) {
     }, 3000);
 }
 
+// ========== CREATE CLIENT ==========
+
+function openCreateModal() {
+    document.getElementById('create-client-modal').style.display = 'flex';
+    document.getElementById('create-client-name').value = '';
+    document.getElementById('create-client-phone').value = '';
+    document.getElementById('create-client-country').value = '+7';
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+}
+
+function closeCreateModal() {
+    document.getElementById('create-client-modal').style.display = 'none';
+}
+
+async function createNewClient() {
+    const name = document.getElementById('create-client-name').value.trim();
+    const countryCode = document.getElementById('create-client-country').value;
+    const phoneRaw = document.getElementById('create-client-phone').value.replace(/\D/g, '');
+    
+    if (!name) {
+        showError('Введите имя клиента');
+        return;
+    }
+    if (!phoneRaw || phoneRaw.length < 6) {
+        showError('Введите корректный номер телефона');
+        return;
+    }
+    
+    const phone = countryCode + phoneRaw;
+    
+    try {
+        const res = await fetch('/api/master/client/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mid, phone, name })
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Не удалось создать клиента');
+        }
+        
+        const data = await res.json();
+        
+        if (data.is_new) {
+            showSuccess('Клиент создан!');
+        } else {
+            showSuccess('Клиент уже существует');
+        }
+        
+        closeCreateModal();
+        loadClients();
+        
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+// ========== IMPORT CONTACTS ==========
+
+let contactsToImport = [];
+let selectedImportContacts = new Set();
+
+function openImportModal() {
+    document.getElementById('import-contacts-modal').style.display = 'flex';
+    contactsToImport = [];
+    selectedImportContacts.clear();
+    document.getElementById('import-contacts-list').classList.add('hidden');
+    document.getElementById('import-actions').classList.add('hidden');
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+}
+
+function closeImportModal() {
+    document.getElementById('import-contacts-modal').style.display = 'none';
+}
+
+// Pick contacts from device
+async function pickContactsFromDevice() {
+    // Check if Contact Picker API is available
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+        try {
+            const props = ['name', 'tel'];
+            const opts = { multiple: true };
+            const contacts = await navigator.contacts.select(props, opts);
+            
+            if (contacts && contacts.length > 0) {
+                processPickedContacts(contacts);
+            }
+        } catch (err) {
+            console.error('Contact Picker error:', err);
+            showManualContactPrompt();
+        }
+    } else {
+        // Fallback: show manual entry prompt
+        showManualContactPrompt();
+    }
+}
+
+function showManualContactPrompt() {
+    // Show alert with instructions
+    alert('Для импорта контактов:\n\n1. Откройте контакты на телефоне\n2. Выберите контакт\n3. Скопируйте номер\n4. Нажмите "Добавить вручную"\n\nИли используйте функцию "Добавить вручную" для ввода контактов по одному.');
+}
+
+function processPickedContacts(contacts) {
+    contactsToImport = [];
+    
+    contacts.forEach(contact => {
+        const name = contact.name && contact.name.length > 0 ? contact.name[0] : 'Без имени';
+        const phones = contact.tel || [];
+        
+        phones.forEach(phone => {
+            const cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.length >= 6) {
+                contactsToImport.push({
+                    id: `${cleanPhone}_${Date.now()}_${Math.random()}`,
+                    name: name,
+                    phone: '+' + cleanPhone
+                });
+            }
+        });
+    });
+    
+    if (contactsToImport.length === 0) {
+        showError('Не удалось получить контакты с номерами телефонов');
+        return;
+    }
+    
+    // Check which contacts already exist
+    checkExistingContacts();
+}
+
+async function checkExistingContacts() {
+    // Get existing phones for comparison
+    const existingPhones = new Set(clients.map(c => c.phone?.replace(/\D/g, '')));
+    
+    contactsToImport.forEach(contact => {
+        const cleanPhone = contact.phone.replace(/\D/g, '');
+        contact.exists = existingPhones.has(cleanPhone);
+    });
+    
+    renderImportList();
+}
+
+function renderImportList() {
+    const container = document.getElementById('contacts-to-import');
+    
+    container.innerHTML = contactsToImport.map(contact => `
+        <div class="import-contact-item ${selectedImportContacts.has(contact.id) ? 'selected' : ''}" 
+             data-id="${contact.id}" onclick="toggleImportContact('${contact.id}')">
+            <input type="checkbox" ${selectedImportContacts.has(contact.id) ? 'checked' : ''} 
+                   ${contact.exists ? 'disabled' : ''}>
+            <div class="import-contact-info">
+                <div class="import-contact-name">${escapeHtml(contact.name)}</div>
+                <div class="import-contact-phone">${escapeHtml(contact.phone)}</div>
+                ${contact.exists ? '<div class="import-contact-exists">Уже в базе</div>' : ''}
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('import-contacts-list').classList.remove('hidden');
+    document.getElementById('import-actions').classList.remove('hidden');
+    updateImportSelectedCount();
+}
+
+function toggleImportContact(id) {
+    const contact = contactsToImport.find(c => c.id === id);
+    if (!contact || contact.exists) return;
+    
+    if (selectedImportContacts.has(id)) {
+        selectedImportContacts.delete(id);
+    } else {
+        selectedImportContacts.add(id);
+    }
+    
+    renderImportList();
+}
+
+function toggleImportSelectAll() {
+    const checkbox = document.getElementById('import-select-all');
+    const availableContacts = contactsToImport.filter(c => !c.exists);
+    
+    if (checkbox.checked) {
+        availableContacts.forEach(c => selectedImportContacts.add(c.id));
+    } else {
+        selectedImportContacts.clear();
+    }
+    
+    renderImportList();
+}
+
+function updateImportSelectedCount() {
+    document.getElementById('import-selected-count').textContent = `${selectedImportContacts.size} выбрано`;
+    
+    // Update select all checkbox state
+    const availableContacts = contactsToImport.filter(c => !c.exists);
+    const allSelected = availableContacts.length > 0 && 
+                        availableContacts.every(c => selectedImportContacts.has(c.id));
+    document.getElementById('import-select-all').checked = allSelected;
+}
+
+function clearImportList() {
+    contactsToImport = [];
+    selectedImportContacts.clear();
+    document.getElementById('import-contacts-list').classList.add('hidden');
+    document.getElementById('import-actions').classList.add('hidden');
+}
+
+async function importSelectedContacts() {
+    if (selectedImportContacts.size === 0) {
+        showError('Выберите контакты для импорта');
+        return;
+    }
+    
+    const contactsToCreate = contactsToImport.filter(c => selectedImportContacts.has(c.id));
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const contact of contactsToCreate) {
+        try {
+            const res = await fetch('/api/master/client/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    mid, 
+                    phone: contact.phone, 
+                    name: contact.name 
+                })
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data.is_new) {
+                    successCount++;
+                }
+            } else {
+                errorCount++;
+            }
+        } catch (e) {
+            errorCount++;
+        }
+    }
+    
+    closeImportModal();
+    loadClients();
+    
+    if (successCount > 0) {
+        showSuccess(`Импортировано: ${successCount} клиентов`);
+    }
+    if (errorCount > 0) {
+        showError(`Ошибки при импорте: ${errorCount}`);
+    }
+}
+
+// Add single contact manually in import modal
+function addManualContactToImport() {
+    closeImportModal();
+    openCreateModal();
+}
+
 // ========== INIT EVENT LISTENERS ==========
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -543,4 +803,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('delete-client-btn')?.addEventListener('click', () => {
         openDeleteConfirm('single');
     });
+    
+    // Create client button
+    document.getElementById('create-client-btn')?.addEventListener('click', openCreateModal);
+    
+    // Import contacts button
+    document.getElementById('import-contacts-btn')?.addEventListener('click', openImportModal);
+    
+    // Pick contacts from device
+    document.getElementById('pick-contacts-btn')?.addEventListener('click', pickContactsFromDevice);
+    
+    // Manual add button in import modal
+    document.getElementById('manual-add-btn')?.addEventListener('click', addManualContactToImport);
+    
+    // Import select all
+    document.getElementById('import-select-all')?.addEventListener('change', toggleImportSelectAll);
 });
