@@ -1886,8 +1886,7 @@ async def master_book_appointment(request: web.Request):
             start_time=utc_start,
             end_time=utc_end,
             status=AppointmentStatus.CONFIRMED.value,
-            comment=comment or None,
-            created_by="master"  # Mark as created by master
+            comment=comment or None
         )
         session.add(appointment)
         await session.commit()
