@@ -6,7 +6,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 
-from database.base import get_db
+from database.base import async_session_maker
 from database.repositories.subscription import SubscriptionRepository
 from database.repositories.master import MasterRepository
 from bot.subscription_plans import get_plan_config
@@ -43,7 +43,7 @@ async def process_yookassa_payment(callback: CallbackQuery, state: FSMContext):
             )
             return
         
-        async with get_db() as session:
+        async with async_session_maker() as session:
             master_repo = MasterRepository(session)
             sub_repo = SubscriptionRepository(session)
             
