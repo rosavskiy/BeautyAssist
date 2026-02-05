@@ -71,29 +71,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   flex-wrap: nowrap;
   gap: 12px;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: #2D3142;
   letter-spacing: -0.5px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .header h1 .feather {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   stroke: #B8A7D6;
   stroke-width: 2.5;
-  flex-shrink: 0;
+  vertical-align: -3px;
+  margin-right: 4px;
 }
 
 .home-btn {
