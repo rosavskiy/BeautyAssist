@@ -151,11 +151,11 @@ function renderServices() {
         return;
     }
 
-    listContainer.style.display = 'grid';
+    listContainer.style.display = 'block';
     emptyState.style.display = 'none';
 
     listContainer.innerHTML = services.map(service => `
-        <div class="service-card" data-id="${service.id}">
+        <div class="service-card ${!service.is_active ? 'inactive' : ''}" data-id="${service.id}">
             <div class="service-header">
                 <h3 class="service-name">${escapeHtml(service.name)}</h3>
                 ${service.category ? `<span class="service-category">${escapeHtml(service.category)}</span>` : ''}
@@ -163,11 +163,13 @@ function renderServices() {
             
             <div class="service-details">
                 <div class="service-info">
-                    <span class="info-label">⏱ Длительность:</span>
+                    <i data-feather="clock" class="info-icon"></i>
+                    <span class="info-label">Длительность:</span>
                     <span class="info-value">${service.duration_minutes} мин</span>
                 </div>
                 <div class="service-info">
-                    <span class="info-label">💰 Цена:</span>
+                    <i data-feather="tag" class="info-icon"></i>
+                    <span class="info-label">Цена:</span>
                     <span class="info-value">${service.price} ₽</span>
                 </div>
             </div>
@@ -178,16 +180,21 @@ function renderServices() {
 
             <div class="service-actions">
                 <button class="btn-edit" onclick="editService(${service.id})">
-                    ✏️ Редактировать
+                    <i data-feather="edit-2"></i>
+                    <span>Редактировать</span>
                 </button>
                 <button class="btn-delete" onclick="openDeleteModal(${service.id}, '${escapeHtml(service.name)}')">
-                    🗑 Удалить
+                    <i data-feather="trash-2"></i>
+                    <span>Удалить</span>
                 </button>
             </div>
 
-            ${!service.is_active ? '<div class="service-inactive">Неактивна</div>' : ''}
+            ${!service.is_active ? '<div class="service-inactive-badge">Неактивна</div>' : ''}
         </div>
     `).join('');
+    
+    // Re-init feather icons
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
 }
 
 // Open Service Modal (Add or Edit)

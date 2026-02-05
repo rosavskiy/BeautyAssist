@@ -84,6 +84,17 @@ body {
   letter-spacing: -0.5px;
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header h1 .feather {
+  width: 24px;
+  height: 24px;
+  stroke: #B8A7D6;
+  stroke-width: 2.5;
+  flex-shrink: 0;
 }
 
 .home-btn {
@@ -128,6 +139,23 @@ body {
 
 .btn-primary:hover {
   box-shadow: 0 6px 24px rgba(184, 167, 214, 0.4);
+}
+
+/* Add service button row */
+.btn-add-service {
+  width: 100%;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-add-service .feather {
+  width: 20px;
+  height: 20px;
+  stroke: #FFFFFF;
+  stroke-width: 2.5;
 }
 
 .btn-secondary {
@@ -224,6 +252,14 @@ body {
   font-size: 14px;
 }
 
+.service-info .info-icon {
+  width: 16px;
+  height: 16px;
+  stroke: #B8A7D6;
+  stroke-width: 2.5;
+  flex-shrink: 0;
+}
+
 .info-label {
   font-weight: 500;
 }
@@ -254,12 +290,26 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.service-actions button .feather {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.5;
 }
 
 .btn-edit {
   background: #FFFFFF;
   color: #7B61A8;
   border: 2px solid #E8ECF1;
+}
+
+.btn-edit .feather {
+  stroke: #7B61A8;
 }
 
 .btn-edit:hover {
@@ -274,13 +324,17 @@ body {
   border: 2px solid #E8ECF1;
 }
 
+.btn-delete .feather {
+  stroke: #E57373;
+}
+
 .btn-delete:hover {
   background: #FFEBEE;
   border-color: #FFCDD2;
   box-shadow: 0 2px 8px rgba(229, 115, 115, 0.15);
 }
 
-.service-inactive {
+.service-inactive-badge {
   margin-top: 12px;
   padding: 6px 12px;
   background: #F5F5F5;
@@ -289,6 +343,11 @@ body {
   font-size: 13px;
   font-weight: 600;
   text-align: center;
+}
+
+.service-card.inactive {
+  opacity: 0.7;
+  border: 2px dashed #E0E0E0;
 }
 
 /* Empty State */
@@ -375,6 +434,7 @@ body {
   padding: 24px;
   animation: slideUp 0.3s ease;
   box-sizing: border-box;
+  margin: 0 auto;
 }
 
 @keyframes slideUp {
