@@ -1324,9 +1324,31 @@ h1 {
 
 .empty-state {
   text-align: center;
-  padding: 40px 20px;
+  padding: 60px 20px;
   color: #7C88A0;
-  font-size: 14px;
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state .empty-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 20px;
+}
+
+.empty-state .empty-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.empty-state .empty-text {
+  margin: 0;
+  color: #9CA3B8;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .btn-primary {

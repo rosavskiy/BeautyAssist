@@ -268,7 +268,29 @@
     if(data && data.referral_code){ window.__master_referral_code = data.referral_code; }
     if(data && Array.isArray(data.appointments)){
       const apps = data.appointments;
-      if(!apps.length){ el.textContent = 'На сегодня записей нет'; return; }
+      if(!apps.length){ 
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M32 8C32 8 28 12 28 20C28 28 32 32 32 32C32 32 36 28 36 20C36 12 32 8 32 8Z" stroke="#B8A7D6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <ellipse cx="32" cy="36" rx="12" ry="4" stroke="#B8A7D6" stroke-width="2"/>
+                <path d="M20 36V44C20 46.2 25.4 48 32 48C38.6 48 44 46.2 44 44V36" stroke="#B8A7D6" stroke-width="2"/>
+                <path d="M32 48V56" stroke="#B8A7D6" stroke-width="2" stroke-linecap="round"/>
+                <path d="M24 56H40" stroke="#B8A7D6" stroke-width="2" stroke-linecap="round"/>
+                <path d="M28 20C28 20 20 22 16 28" stroke="#B8A7D6" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+                <path d="M36 20C36 20 44 22 48 28" stroke="#B8A7D6" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+                <circle cx="14" cy="30" r="2" fill="#D4C9E8" opacity="0.5"/>
+                <circle cx="50" cy="30" r="2" fill="#D4C9E8" opacity="0.5"/>
+                <circle cx="12" cy="26" r="1.5" fill="#D4C9E8" opacity="0.3"/>
+                <circle cx="52" cy="26" r="1.5" fill="#D4C9E8" opacity="0.3"/>
+              </svg>
+            </div>
+            <p class="empty-text">Записей нет — можно отдохнуть</p>
+          </div>
+        `;
+        return; 
+      }
       apps.forEach(a => {
         const card = document.createElement('div'); 
         card.className='card';
