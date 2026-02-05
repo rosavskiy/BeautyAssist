@@ -7,6 +7,9 @@
   const preselectService = qs.get('service');
 
   const serviceSelect = document.getElementById('service-select');
+  const serviceTrigger = document.getElementById('service-select-trigger');
+  const serviceOptions = document.getElementById('service-select-options');
+  const serviceValueSpan = serviceTrigger?.querySelector('.custom-select-value');
   const dateBtn = document.getElementById('date-btn');
   const calendarSection = document.getElementById('calendar-section');
   const calendarClose = document.getElementById('calendar-close');
@@ -169,6 +172,11 @@
       const data = await api(`/api/services?code=${encodeURIComponent(masterCode)}`);
       console.log('loadServices: received data =', data);
       if(Array.isArray(data)){
+        // Build custom select options
+        serviceOptions.innerHTML = '';
+        let firstService = null;
+        let preselectedService = null;
+        
         // Group services by category
         const grouped = {};
         const uncategorized = [];
@@ -184,32 +192,54 @@
           }
         });
         
-        // Build select with optgroups
-        let html = '';
+        // Helper to create option
+        function createOption(s) {
+          const opt = document.createElement('div');
+          opt.className = 'custom-select-option';
+          opt.dataset.value = s.id;
+          opt.textContent = `${s.name} — ${s.price} ₽ / ${s.duration} мин`;
+          opt.addEventListener('click', () => selectService(s.id, opt.textContent));
+          if (!firstService) firstService = { id: s.id, text: opt.textContent };
+          if (preselectService == s.id) preselectedService = { id: s.id, text: opt.textContent };
+          return opt;
+        }
         
         // Add categorized services
         Object.keys(grouped).sort().forEach(category => {
-          html += `<optgroup label="${escapeHtml(category)}">`;
+          const catHeader = document.createElement('div');
+          catHeader.className = 'custom-select-option disabled';
+          catHeader.style.fontWeight = '600';
+          catHeader.style.color = '#9B7EBD';
+          catHeader.style.fontSize = '12px';
+          catHeader.textContent = category;
+          serviceOptions.appendChild(catHeader);
+          
           grouped[category].forEach(s => {
-            html += `<option value="${s.id}" ${preselectService==s.id? 'selected':''}>${escapeHtml(s.name)} — ${s.price} ₽ / ${s.duration} мин</option>`;
+            serviceOptions.appendChild(createOption(s));
           });
-          html += `</optgroup>`;
         });
         
         // Add uncategorized services
         if (uncategorized.length > 0) {
           if (Object.keys(grouped).length > 0) {
-            html += `<optgroup label="Другие услуги">`;
+            const catHeader = document.createElement('div');
+            catHeader.className = 'custom-select-option disabled';
+            catHeader.style.fontWeight = '600';
+            catHeader.style.color = '#9B7EBD';
+            catHeader.style.fontSize = '12px';
+            catHeader.textContent = 'Другие услуги';
+            serviceOptions.appendChild(catHeader);
           }
           uncategorized.forEach(s => {
-            html += `<option value="${s.id}" ${preselectService==s.id? 'selected':''}>${escapeHtml(s.name)} — ${s.price} ₽ / ${s.duration} мин</option>`;
+            serviceOptions.appendChild(createOption(s));
           });
-          if (Object.keys(grouped).length > 0) {
-            html += `</optgroup>`;
-          }
         }
         
-        serviceSelect.innerHTML = html;
+        // Select first or preselected service
+        const toSelect = preselectedService || firstService;
+        if (toSelect) {
+          selectService(toSelect.id, toSelect.text);
+        }
         
         if(data.length){
           // Load slots after services are loaded and service is selected
@@ -334,7 +364,36 @@
     }
   }
 
-  serviceSelect.addEventListener('change', () => loadSlots());
+  // Custom select for services
+  function selectService(id, text) {
+    serviceSelect.value = id;
+    serviceValueSpan.textContent = text;
+    serviceValueSpan.classList.remove('placeholder');
+    serviceOptions.querySelectorAll('.custom-select-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.value == id);
+    });
+    serviceOptions.classList.add('hidden');
+    serviceTrigger.classList.remove('active');
+    loadSlots();
+  }
+  
+  serviceTrigger?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !serviceOptions.classList.contains('hidden');
+    if (isOpen) {
+      serviceOptions.classList.add('hidden');
+      serviceTrigger.classList.remove('active');
+    } else {
+      serviceOptions.classList.remove('hidden');
+      serviceTrigger.classList.add('active');
+    }
+  });
+  
+  document.addEventListener('click', () => {
+    serviceOptions?.classList.add('hidden');
+    serviceTrigger?.classList.remove('active');
+  });
+
   submitBtn.addEventListener('click', book);
   phoneEl.addEventListener('input', () => {
     formatPhoneDisplay();
@@ -346,6 +405,9 @@
 
   // initialize masked phone prefix
   if(!phoneEl.value) phoneEl.value = '+7 ';
+  
+  // Init feather icons
+  if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
   
   // Check if masterCode is present
   if(!masterCode){

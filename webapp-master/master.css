@@ -655,6 +655,31 @@ h1 {
   cursor: default;
 }
 
+/* Country select (compact version) */
+.country-select-wrapper {
+  width: auto;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.country-select-wrapper .custom-select-trigger {
+  padding: 12px 10px;
+  gap: 4px;
+}
+
+.country-select-wrapper .custom-select-value {
+  font-size: 14px;
+}
+
+.country-select-wrapper .custom-select-arrow {
+  width: 16px;
+  height: 16px;
+}
+
+.country-select-wrapper .custom-select-options {
+  min-width: 140px;
+}
+
 .form-actions .btn-secondary:hover {
   background: #F0EDF7;
   border-color: #D4C9E8;

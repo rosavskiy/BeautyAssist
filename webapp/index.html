@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Запись к мастеру</title>
-  <link rel="stylesheet" href="/webapp/styles.css?v=20260205" />
+  <link rel="stylesheet" href="/webapp/styles.css?v=20260205-2" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -17,7 +17,14 @@
 
     <section>
       <label>Услуга</label>
-      <select id="service-select"></select>
+      <div class="custom-select" id="service-select-wrapper">
+        <div class="custom-select-trigger" id="service-select-trigger">
+          <span class="custom-select-value placeholder">Загрузка услуг...</span>
+          <i data-feather="chevron-down" class="custom-select-arrow"></i>
+        </div>
+        <div class="custom-select-options hidden" id="service-select-options"></div>
+        <input type="hidden" id="service-select" />
+      </div>
     </section>
 
     <section>
@@ -71,7 +78,7 @@
     <p id="status"></p>
   </div>
 
-  <script src="/webapp/app.js?v=20260205"></script>
+  <script src="/webapp/app.js?v=20260205-2"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });

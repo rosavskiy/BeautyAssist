@@ -292,12 +292,13 @@
   addExpenseBtn.addEventListener('click', () => {
     document.getElementById('expense-id').value = '';
     modalTitle.textContent = 'Новый расход';
-    document.getElementById('expense-category').value = 'materials';
+    if (window.setExpenseCategory) window.setExpenseCategory('materials', 'Материалы');
     document.getElementById('expense-amount').value = '';
     const today = new Date();
     document.getElementById('expense-date').value = formatDate(today);
     document.getElementById('expense-description').value = '';
     expenseModal.classList.remove('hidden');
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
   });
   
   // Close modal
@@ -388,11 +389,12 @@
       
       document.getElementById('expense-id').value = expense.id;
       modalTitle.textContent = 'Редактировать расход';
-      document.getElementById('expense-category').value = expense.category;
+      if (window.setExpenseCategory) window.setExpenseCategory(expense.category, getCategoryName(expense.category));
       document.getElementById('expense-amount').value = expense.amount;
       document.getElementById('expense-date').value = formatDate(new Date(expense.expense_date));
       document.getElementById('expense-description').value = expense.description || '';
       expenseModal.classList.remove('hidden');
+      if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
     } catch (e) {
       alert('Ошибка загрузки расхода');
     }
@@ -553,4 +555,71 @@
 
   // Initialize
   setCurrentPeriod('week');
+  
+  // Custom select for expense category
+  initCustomSelect('expense-category-wrapper');
+  
+  function initCustomSelect(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    const trigger = wrapper.querySelector('.custom-select-trigger');
+    const options = wrapper.querySelector('.custom-select-options');
+    const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+    
+    if (!trigger || !options) return;
+    
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !options.classList.contains('hidden');
+      
+      document.querySelectorAll('.custom-select-options').forEach(o => o.classList.add('hidden'));
+      document.querySelectorAll('.custom-select-trigger').forEach(t => t.classList.remove('active'));
+      
+      if (!isOpen) {
+        options.classList.remove('hidden');
+        trigger.classList.add('active');
+      }
+    });
+    
+    options.querySelectorAll('.custom-select-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const value = opt.dataset.value;
+        const text = opt.textContent;
+        
+        options.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        
+        const valueSpan = trigger.querySelector('.custom-select-value');
+        valueSpan.textContent = text;
+        
+        if (hiddenInput) hiddenInput.value = value;
+        
+        options.classList.add('hidden');
+        trigger.classList.remove('active');
+      });
+    });
+  }
+  
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select-options').forEach(o => o.classList.add('hidden'));
+    document.querySelectorAll('.custom-select-trigger').forEach(t => t.classList.remove('active'));
+  });
+  
+  // Helper to set custom select value
+  window.setExpenseCategory = function(value, text) {
+    const hiddenInput = document.getElementById('expense-category');
+    const trigger = document.getElementById('expense-category-trigger');
+    const options = document.getElementById('expense-category-options');
+    
+    if (hiddenInput) hiddenInput.value = value;
+    if (trigger) {
+      trigger.querySelector('.custom-select-value').textContent = text;
+    }
+    if (options) {
+      options.querySelectorAll('.custom-select-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+      });
+    }
+  };
 })();

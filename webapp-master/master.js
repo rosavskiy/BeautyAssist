@@ -976,11 +976,51 @@
   
   // Close custom select when clicking outside
   document.addEventListener('click', (e) => {
-    const wrapper = document.getElementById('book-client-service-wrapper');
-    if (wrapper && !wrapper.contains(e.target)) {
+    const serviceWrapper = document.getElementById('book-client-service-wrapper');
+    if (serviceWrapper && !serviceWrapper.contains(e.target)) {
       document.getElementById('book-client-service-options')?.classList.add('hidden');
       document.getElementById('book-client-service-trigger')?.classList.remove('active');
     }
+    
+    const countryWrapper = document.getElementById('book-client-country-wrapper');
+    if (countryWrapper && !countryWrapper.contains(e.target)) {
+      document.getElementById('book-client-country-options')?.classList.add('hidden');
+      document.getElementById('book-client-country-trigger')?.classList.remove('active');
+    }
+  });
+
+  // Country custom select
+  document.getElementById('book-client-country-trigger')?.addEventListener('click', () => {
+    const trigger = document.getElementById('book-client-country-trigger');
+    const options = document.getElementById('book-client-country-options');
+    const isOpen = !options.classList.contains('hidden');
+    
+    if (isOpen) {
+      options.classList.add('hidden');
+      trigger.classList.remove('active');
+    } else {
+      options.classList.remove('hidden');
+      trigger.classList.add('active');
+    }
+  });
+
+  // Country option selection
+  document.querySelectorAll('#book-client-country-options .custom-select-option').forEach(option => {
+    option.addEventListener('click', () => {
+      const value = option.dataset.value;
+      const text = option.textContent;
+      
+      document.getElementById('book-client-country').value = value;
+      document.getElementById('book-client-country-trigger').querySelector('span').textContent = text;
+      document.getElementById('book-client-country-options').classList.add('hidden');
+      document.getElementById('book-client-country-trigger').classList.remove('active');
+      
+      // Mark as selected
+      document.querySelectorAll('#book-client-country-options .custom-select-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      option.classList.add('selected');
+    });
   });
 
   // Close book client modal

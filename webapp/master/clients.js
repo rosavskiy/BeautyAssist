@@ -548,7 +548,16 @@ function openCreateModal() {
     document.getElementById('create-client-modal').style.display = 'flex';
     document.getElementById('create-client-name').value = '';
     document.getElementById('create-client-phone').value = '';
+    // Reset country select
     document.getElementById('create-client-country').value = '+7';
+    const trigger = document.getElementById('create-client-country-trigger');
+    if (trigger) trigger.querySelector('.custom-select-value').textContent = '🇷🇺 +7';
+    const options = document.getElementById('create-client-country-options');
+    if (options) {
+        options.querySelectorAll('.custom-select-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.value === '+7');
+        });
+    }
     if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
 }
 
@@ -866,4 +875,55 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Import select all
     document.getElementById('import-select-all')?.addEventListener('change', toggleImportSelectAll);
+    
+    // Initialize custom select for country
+    initCustomSelect('create-client-country-wrapper');
+});
+
+// Custom select functionality
+function initCustomSelect(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    const trigger = wrapper.querySelector('.custom-select-trigger');
+    const options = wrapper.querySelector('.custom-select-options');
+    const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+    
+    if (!trigger || !options) return;
+    
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = !options.classList.contains('hidden');
+        
+        document.querySelectorAll('.custom-select-options').forEach(o => o.classList.add('hidden'));
+        document.querySelectorAll('.custom-select-trigger').forEach(t => t.classList.remove('active'));
+        
+        if (!isOpen) {
+            options.classList.remove('hidden');
+            trigger.classList.add('active');
+        }
+    });
+    
+    options.querySelectorAll('.custom-select-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const value = opt.dataset.value;
+            const text = opt.textContent;
+            
+            options.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            
+            const valueSpan = trigger.querySelector('.custom-select-value');
+            valueSpan.textContent = text;
+            
+            if (hiddenInput) hiddenInput.value = value;
+            
+            options.classList.add('hidden');
+            trigger.classList.remove('active');
+        });
+    });
+}
+
+document.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select-options').forEach(o => o.classList.add('hidden'));
+    document.querySelectorAll('.custom-select-trigger').forEach(t => t.classList.remove('active'));
 });

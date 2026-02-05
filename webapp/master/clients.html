@@ -6,7 +6,7 @@
     <title>Клиенты - BeautyAssist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
-    <link rel="stylesheet" href="clients.css?v=20260205-6">
+    <link rel="stylesheet" href="clients.css?v=20260205-7">
 </head>
 <body>
     <div class="container">
@@ -134,20 +134,27 @@
                 <div class="form-group">
                     <label>Телефон *</label>
                     <div class="phone-input-row">
-                        <select id="create-client-country" class="country-select">
-                            <option value="+7" selected>🇷🇺 +7</option>
-                            <option value="+375">🇧🇾 +375</option>
-                            <option value="+380">🇺🇦 +380</option>
-                            <option value="+1">🇺🇸 +1</option>
-                            <option value="+44">🇬🇧 +44</option>
-                            <option value="+49">🇩🇪 +49</option>
-                            <option value="+33">🇫🇷 +33</option>
-                            <option value="+90">🇹🇷 +90</option>
-                            <option value="+971">🇦🇪 +971</option>
-                            <option value="+995">🇬🇪 +995</option>
-                            <option value="+374">🇦🇲 +374</option>
-                            <option value="">Другой</option>
-                        </select>
+                        <div class="custom-select country-select-wrapper" id="create-client-country-wrapper">
+                          <div class="custom-select-trigger country-trigger" id="create-client-country-trigger">
+                            <span class="custom-select-value">🇷🇺 +7</span>
+                            <i data-feather="chevron-down" class="custom-select-arrow"></i>
+                          </div>
+                          <div class="custom-select-options hidden" id="create-client-country-options">
+                            <div class="custom-select-option selected" data-value="+7">🇷🇺 +7</div>
+                            <div class="custom-select-option" data-value="+375">🇧🇾 +375</div>
+                            <div class="custom-select-option" data-value="+380">🇺🇦 +380</div>
+                            <div class="custom-select-option" data-value="+1">🇺🇸 +1</div>
+                            <div class="custom-select-option" data-value="+44">🇬🇧 +44</div>
+                            <div class="custom-select-option" data-value="+49">🇩🇪 +49</div>
+                            <div class="custom-select-option" data-value="+33">🇫🇷 +33</div>
+                            <div class="custom-select-option" data-value="+90">🇹🇷 +90</div>
+                            <div class="custom-select-option" data-value="+971">🇦🇪 +971</div>
+                            <div class="custom-select-option" data-value="+995">🇬🇪 +995</div>
+                            <div class="custom-select-option" data-value="+374">🇦🇲 +374</div>
+                            <div class="custom-select-option" data-value="">Другой</div>
+                          </div>
+                          <input type="hidden" id="create-client-country" value="+7" />
+                        </div>
                         <input type="tel" id="create-client-phone" placeholder="999 123-45-67" inputmode="tel">
                     </div>
                 </div>
@@ -208,7 +215,7 @@
         </div>
     </div>
 
-    <script src="clients.js?v=20260205-6"></script>
+    <script src="clients.js?v=20260205-7"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
