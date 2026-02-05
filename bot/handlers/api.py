@@ -68,6 +68,7 @@ def setup_routes(app: web.Application):
     app.router.add_get('/api/master/client/history', get_client_history)
     app.router.add_post('/api/master/client/create', create_offline_client)
     app.router.add_post('/api/master/book', master_book_appointment)
+    app.router.add_get('/api/master/qr', get_master_qr_code)
     
     # Master API - Services
     app.router.add_get('/api/master/services', get_master_services)
@@ -1911,4 +1912,48 @@ async def master_book_appointment(request: web.Request):
             "service_name": service.name,
             "start_time": utc_start.isoformat()
         })
+
+
+async def get_master_qr_code(request: web.Request):
+    """Generate QR code for master's booking link.
+    
+    Query params:
+        mid: master telegram_id
+    
+    Returns:
+        PNG image with QR code
+    """
+    from bot.utils.qr_generator import generate_webapp_qr
+    from bot.config import settings
+    
+    mid = request.query.get("mid")
+    if not mid:
+        return web.json_response({"error": "mid required"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        master = await mrepo.get_by_telegram_id(int(mid))
+        
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        if not master.referral_code:
+            return web.json_response({"error": "no referral code"}, status=400)
+        
+        try:
+            # Generate QR code
+            bot_username = settings.BOT_USERNAME or "mybeautyassist_bot"
+            qr_buffer = generate_webapp_qr(bot_username, master.referral_code, box_size=8)
+            
+            return web.Response(
+                body=qr_buffer.getvalue(),
+                content_type="image/png",
+                headers={
+                    "Cache-Control": "public, max-age=86400",  # Cache for 24 hours
+                    "Content-Disposition": f'inline; filename="qr_{master.referral_code}.png"'
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to generate QR code: {e}", exc_info=True)
+            return web.json_response({"error": "Failed to generate QR code"}, status=500)
 

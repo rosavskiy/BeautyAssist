@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Кабинет мастера</title>
-  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-4" />
+  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-5" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -35,6 +35,9 @@
            <button id="settings-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
          </div>
          <div style="margin-bottom:16px">
+           <button id="open-qr-code" class="nav-btn settings-menu-btn"><i data-feather="share-2" class="menu-icon"></i> QR-код для клиентов</button>
+         </div>
+         <div style="margin-bottom:16px">
            <button id="open-clients" class="nav-btn settings-menu-btn"><i data-feather="users" class="menu-icon"></i> Клиенты</button>
          </div>
          <div style="margin-bottom:16px">
@@ -48,6 +51,23 @@
          </div>
          <div>
            <button id="open-hours" class="nav-btn settings-menu-btn"><i data-feather="clock" class="menu-icon"></i> Рабочее время</button>
+         </div>
+       </div>
+     </section>
+
+     <!-- QR Code Modal -->
+     <section id="qr-code-section" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>QR-код для клиентов</h2>
+           <button id="qr-code-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
+         </div>
+         <div class="modal-body" style="text-align:center">
+           <p class="muted" style="margin-bottom:16px">Покажите этот QR-код клиенту.<br>Сканируя его, клиент сможет записаться онлайн и получать напоминания.</p>
+           <div id="qr-code-container" style="display:flex; justify-content:center; padding:20px; background:#fff; border-radius:16px; margin-bottom:16px">
+             <img id="qr-code-img" src="" alt="QR Code" style="max-width:200px; height:auto" />
+           </div>
+           <p class="muted" style="font-size:12px">Клиент сканирует → делится контактом → история записей сохраняется</p>
          </div>
        </div>
      </section>
@@ -262,7 +282,7 @@
      </section>
 
   </div>
-  <script src="/webapp-master/master.js?v=20260205-6"></script>
+  <script src="/webapp-master/master.js?v=20260205-7"></script>
   <script>
     // Инициализация Feather Icons
     document.addEventListener('DOMContentLoaded', function() {

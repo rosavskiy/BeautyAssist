@@ -178,6 +178,8 @@
     if(id === 'daysoff-save') saveDaysOff();
     if(id === 'open-dayoff-calendar') openCalendarDayOffMode();
     if(id === 'open-hours') openHoursModal();
+    if(id === 'open-qr-code') openQRCodeModal();
+    if(id === 'qr-code-close') document.getElementById('qr-code-section').classList.add('hidden');
     if(id === 'hours-close') document.getElementById('hours-section').classList.add('hidden');
     if(id === 'hours-save') saveHours();
     if(id === 'complete-confirm-close') document.getElementById('complete-confirm-section').classList.add('hidden');
@@ -440,6 +442,18 @@
         rescheduleModal.current.setMonth(rescheduleModal.current.getMonth() + 1);
         renderRescheduleModalCalendar();
       };
+  }
+  
+  function openQRCodeModal(){
+    document.getElementById('settings-section').classList.add('hidden');
+    const modal = document.getElementById('qr-code-section');
+    const img = document.getElementById('qr-code-img');
+    
+    // Set QR code image source
+    img.src = `/api/master/qr?mid=${encodeURIComponent(mid)}&t=${Date.now()}`;
+    
+    modal.classList.remove('hidden');
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
   }
   
   function openHoursModal(){

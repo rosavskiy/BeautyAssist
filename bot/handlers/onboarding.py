@@ -5,12 +5,14 @@ import logging
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.types import MenuButtonWebApp, BotCommand, BotCommandScopeChat, MenuButtonDefault
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.filters import CommandStart, Command
 from aiogram.filters.command import CommandObject
 from typing import Optional
 from database.base import async_session_maker
 from database.repositories.master import MasterRepository
 from database.repositories.service import ServiceRepository
+from database.repositories.client import ClientRepository
 from database.models.master import Master
 from bot.config import settings, CITY_TZ_MAP
 
@@ -18,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 # Will be injected during registration
 bot = None
+
+# Temporary storage for pending client links (telegram_id -> {master_id, referral_code})
+# In production, consider using Redis or FSM storage
+_pending_client_links: dict = {}
 
 router = Router(name="onboarding")
 
@@ -258,20 +264,63 @@ async def on_start(message: Message, command: CommandObject):
                 if not master:
                     return await message.answer("Мастер не найден")
                 
+                # Check if client already linked by telegram_id
+                crepo = ClientRepository(session)
+                existing_client = await crepo.get_by_telegram_id(master.id, message.from_user.id)
+                
                 webapp_url = build_webapp_url_direct(master, service_id)
                 appointments_url = build_client_appointments_url(master)
                 if not webapp_url:
                     return await message.answer("Ошибка конфигурации")
                 
-                kb = InlineKeyboardMarkup(inline_keyboard=[
+                inline_kb = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="📅 Записаться к мастеру", web_app=WebAppInfo(url=webapp_url))],
                     [InlineKeyboardButton(text="📋 Мои записи", web_app=WebAppInfo(url=appointments_url))]
                 ])
-                await message.answer(
-                    f"👋 Здравствуйте!\n\n"
-                    f"Нажмите кнопку ниже, чтобы выбрать услугу и время записи.",
-                    reply_markup=kb
-                )
+                
+                if existing_client:
+                    # Client already linked - just show booking buttons
+                    await message.answer(
+                        f"👋 Здравствуйте, {existing_client.name}!\n\n"
+                        f"Вы уже зарегистрированы у мастера <b>{master.name}</b>.\n"
+                        f"Нажмите кнопку ниже для записи.",
+                        reply_markup=inline_kb,
+                        parse_mode="HTML"
+                    )
+                else:
+                    # Store referral_code for contact handler
+                    # We use a simple approach: save to user's chat data via message
+                    # Send contact request button
+                    contact_kb = ReplyKeyboardMarkup(
+                        keyboard=[
+                            [KeyboardButton(text="📱 Поделиться контактом", request_contact=True)]
+                        ],
+                        resize_keyboard=True,
+                        one_time_keyboard=True
+                    )
+                    
+                    # Save master's referral code for later binding
+                    _pending_client_links[message.from_user.id] = {
+                        'master_id': master.id,
+                        'referral_code': referral_code,
+                        'master_name': master.name
+                    }
+                    
+                    await message.answer(
+                        f"👋 Здравствуйте!\n\n"
+                        f"Вы сканировали QR-код мастера <b>{master.name}</b>.\n\n"
+                        f"Чтобы привязать ваш номер и видеть историю записей, "
+                        f"нажмите кнопку ниже или сразу запишитесь:",
+                        reply_markup=contact_kb,
+                        parse_mode="HTML"
+                    )
+                    
+                    # Also show inline booking buttons
+                    await message.answer(
+                        "Или сразу запишитесь:",
+                        reply_markup=inline_kb
+                    )
+                
                 # Remove menu commands for clients (clear bot commands)
                 try:
                     await bot.set_my_commands(commands=[], scope=BotCommandScopeChat(chat_id=message.chat.id))
@@ -475,6 +524,136 @@ async def cb_setup_city(call: CallbackQuery):
     else:
         # Setup complete, show final message
         await show_setup_complete_message(call.message, updated_master)
+
+
+def normalize_phone(phone: str) -> str:
+    """Normalize phone number to +7XXXXXXXXXX format."""
+    digits = ''.join(c for c in phone if c.isdigit())
+    if digits.startswith('8') and len(digits) == 11:
+        digits = '7' + digits[1:]
+    if not digits.startswith('7'):
+        digits = '7' + digits
+    return '+' + digits
+
+
+@router.message(F.contact)
+async def handle_contact(message: Message):
+    """Handle shared contact - link offline client to Telegram."""
+    from bot.utils.webapp import build_webapp_url_direct, build_client_appointments_url
+    
+    contact = message.contact
+    user_id = message.from_user.id
+    
+    # Check if this user has a pending link
+    pending = _pending_client_links.pop(user_id, None)
+    
+    if not pending:
+        # No pending link - maybe they just shared contact randomly
+        await message.answer(
+            "📱 Контакт получен!\n\n"
+            "Чтобы привязать номер к мастеру, сначала отсканируйте QR-код мастера.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return
+    
+    master_id = pending['master_id']
+    master_name = pending['master_name']
+    referral_code = pending['referral_code']
+    
+    # Normalize phone
+    phone = normalize_phone(contact.phone_number)
+    
+    async with async_session_maker() as session:
+        crepo = ClientRepository(session)
+        mrepo = MasterRepository(session)
+        
+        master = await mrepo.get_by_id(master_id)
+        if not master:
+            await message.answer("Ошибка: мастер не найден", reply_markup=ReplyKeyboardRemove())
+            return
+        
+        # Try to find existing client by phone
+        existing_client = await crepo.get_by_phone(master_id, phone)
+        
+        if existing_client:
+            # Found offline client - link Telegram!
+            was_offline = existing_client.telegram_id is None
+            existing_client.telegram_id = user_id
+            existing_client.telegram_username = message.from_user.username
+            await crepo.update(existing_client)
+            await session.commit()
+            
+            if was_offline:
+                # Count previous appointments
+                from database.repositories.appointment import AppointmentRepository
+                arepo = AppointmentRepository(session)
+                appointments = await arepo.get_by_client(existing_client.id)
+                visits_count = len([a for a in appointments if a.status in ('completed', 'confirmed', 'scheduled')])
+                
+                logger.info(
+                    f"Linked offline client {existing_client.id} to Telegram user {user_id}. "
+                    f"Previous visits: {visits_count}"
+                )
+                
+                await message.answer(
+                    f"🎉 <b>Отлично, {existing_client.name}!</b>\n\n"
+                    f"Ваш номер {phone} успешно привязан.\n"
+                    f"Теперь вы можете видеть историю своих записей у мастера <b>{master_name}</b>.\n\n"
+                    f"📊 Найдено записей: {visits_count}",
+                    reply_markup=ReplyKeyboardRemove(),
+                    parse_mode="HTML"
+                )
+            else:
+                await message.answer(
+                    f"✅ Ваш аккаунт уже привязан, {existing_client.name}!",
+                    reply_markup=ReplyKeyboardRemove(),
+                    parse_mode="HTML"
+                )
+        else:
+            # New client - create with Telegram info
+            from database.models.client import Client
+            
+            name = contact.first_name or message.from_user.full_name or "Клиент"
+            if contact.last_name:
+                name = f"{contact.first_name} {contact.last_name}"
+            
+            new_client = Client(
+                master_id=master_id,
+                telegram_id=user_id,
+                telegram_username=message.from_user.username,
+                name=name,
+                phone=phone,
+                source="telegram_qr",  # Came via QR code
+                total_visits=0,
+                total_spent=0
+            )
+            session.add(new_client)
+            await session.commit()
+            await session.refresh(new_client)
+            
+            logger.info(f"Created new client {new_client.id} via QR code for master {master_id}")
+            
+            await message.answer(
+                f"🎉 <b>Добро пожаловать, {name}!</b>\n\n"
+                f"Вы зарегистрированы у мастера <b>{master_name}</b>.\n"
+                f"Теперь вы можете записываться онлайн и получать напоминания!",
+                reply_markup=ReplyKeyboardRemove(),
+                parse_mode="HTML"
+            )
+        
+        # Show booking buttons
+        webapp_url = build_webapp_url_direct(master, None)
+        appointments_url = build_client_appointments_url(master)
+        
+        if webapp_url:
+            inline_kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="📅 Записаться", web_app=WebAppInfo(url=webapp_url))],
+                [InlineKeyboardButton(text="📋 Мои записи", web_app=WebAppInfo(url=appointments_url))]
+            ])
+            await message.answer(
+                "Выберите действие:",
+                reply_markup=inline_kb
+            )
 
 
 def register_handlers(dp):
