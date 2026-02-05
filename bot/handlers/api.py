@@ -1945,7 +1945,8 @@ async def get_master_qr_code(request: web.Request):
         
         try:
             # Generate QR code
-            bot_username = settings.BOT_USERNAME or "mybeautyassist_bot"
+            from bot.config import BOT_USERNAME
+            bot_username = BOT_USERNAME or "mybeautyassist_bot"
             qr_buffer = generate_webapp_qr(bot_username, master.referral_code, box_size=8)
             
             return web.Response(
