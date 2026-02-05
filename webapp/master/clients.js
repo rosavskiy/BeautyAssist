@@ -596,7 +596,37 @@ function closeImportModal() {
     document.getElementById('import-contacts-modal').style.display = 'none';
 }
 
-// Pick contacts from device
+// Import contacts from Telegram via bot
+async function importFromTelegram() {
+    // Call API to start import flow in Telegram
+    try {
+        const res = await fetch('/api/master/import-contacts/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mid })
+        });
+        
+        if (res.ok) {
+            closeImportModal();
+            
+            // Close WebApp and redirect to bot
+            if (tg) {
+                tg.showAlert('Перейдите в чат с ботом, чтобы выбрать контакты для импорта.', () => {
+                    tg.close();
+                });
+            } else {
+                alert('Перейдите в чат с ботом @mybeautyassist_bot для выбора контактов.');
+            }
+        } else {
+            showError('Не удалось запустить импорт');
+        }
+    } catch (e) {
+        console.error('Import error:', e);
+        showError('Ошибка запуска импорта');
+    }
+}
+
+// Pick contacts from device (fallback for Android Chrome)
 async function pickContactsFromDevice() {
     // Check if Contact Picker API is available
     if ('contacts' in navigator && 'ContactsManager' in window) {
@@ -610,17 +640,13 @@ async function pickContactsFromDevice() {
             }
         } catch (err) {
             console.error('Contact Picker error:', err);
-            showManualContactPrompt();
+            // Fallback to Telegram import
+            importFromTelegram();
         }
     } else {
-        // Fallback: show manual entry prompt
-        showManualContactPrompt();
+        // Use Telegram import instead
+        importFromTelegram();
     }
-}
-
-function showManualContactPrompt() {
-    // Show alert with instructions
-    alert('Для импорта контактов:\n\n1. Откройте контакты на телефоне\n2. Выберите контакт\n3. Скопируйте номер\n4. Нажмите "Добавить вручную"\n\nИли используйте функцию "Добавить вручную" для ввода контактов по одному.');
 }
 
 function processPickedContacts(contacts) {
@@ -810,8 +836,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Import contacts button
     document.getElementById('import-contacts-btn')?.addEventListener('click', openImportModal);
     
-    // Pick contacts from device
-    document.getElementById('pick-contacts-btn')?.addEventListener('click', pickContactsFromDevice);
+    // Import from Telegram button
+    document.getElementById('pick-contacts-btn')?.addEventListener('click', importFromTelegram);
     
     // Manual add button in import modal
     document.getElementById('manual-add-btn')?.addEventListener('click', addManualContactToImport);

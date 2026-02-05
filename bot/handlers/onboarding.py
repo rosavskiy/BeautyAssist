@@ -676,6 +676,144 @@ async def handle_contact(message: Message):
             )
 
 
+# ========== IMPORT TELEGRAM CONTACTS ==========
+
+from aiogram.types import KeyboardButtonRequestUsers
+
+@router.message(Command("import_contacts"))
+async def cmd_import_contacts(message: Message):
+    """Start contact import process - show keyboard with request_users button."""
+    user_id = message.from_user.id
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        master = await mrepo.get_by_telegram_id(user_id)
+        
+        if not master:
+            await message.answer("❌ Эта команда только для мастеров.")
+            return
+    
+    # Create keyboard with request_users button
+    request_users_btn = KeyboardButton(
+        text="📥 Выбрать контакты из Telegram",
+        request_users=KeyboardButtonRequestUsers(
+            request_id=1,  # Unique ID for this request
+            user_is_bot=False,
+            max_quantity=10  # Allow up to 10 contacts at once
+        )
+    )
+    
+    cancel_btn = KeyboardButton(text="❌ Отмена")
+    
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[[request_users_btn], [cancel_btn]],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    
+    await message.answer(
+        "📥 <b>Импорт контактов из Telegram</b>\n\n"
+        "Нажмите кнопку ниже, чтобы выбрать контакты для импорта.\n"
+        "Вы можете выбрать до 10 контактов за раз.\n\n"
+        "⚠️ Будут импортированы только те контакты, у которых есть номер телефона в Telegram.",
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+
+
+@router.message(F.text == "❌ Отмена")
+async def cancel_import(message: Message):
+    """Cancel contact import."""
+    await message.answer(
+        "Импорт отменён.",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+
+@router.message(F.users_shared)
+async def handle_users_shared(message: Message):
+    """Handle shared users - import them as clients."""
+    user_id = message.from_user.id
+    users_shared = message.users_shared
+    
+    if not users_shared or not users_shared.users:
+        await message.answer(
+            "❌ Не удалось получить контакты.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        crepo = ClientRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(user_id)
+        
+        if not master:
+            await message.answer(
+                "❌ Только мастера могут импортировать контакты.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            return
+        
+        imported_count = 0
+        skipped_count = 0
+        no_phone_count = 0
+        
+        for shared_user in users_shared.users:
+            # shared_user has: user_id, first_name, last_name, username, photo
+            shared_user_id = shared_user.user_id
+            first_name = shared_user.first_name or "Клиент"
+            last_name = shared_user.last_name or ""
+            username = shared_user.username
+            
+            name = f"{first_name} {last_name}".strip()
+            
+            # Check if client already exists by telegram_id
+            existing = await crepo.get_by_telegram_id(master.id, shared_user_id)
+            
+            if existing:
+                skipped_count += 1
+                continue
+            
+            # Create new client (without phone for now - Telegram doesn't share it via users_shared)
+            from database.models.client import Client
+            
+            # Generate placeholder phone based on telegram_id
+            placeholder_phone = f"tg_{shared_user_id}"
+            
+            new_client = Client(
+                master_id=master.id,
+                telegram_id=shared_user_id,
+                telegram_username=username,
+                name=name,
+                phone=placeholder_phone,
+                source="telegram_import",
+                total_visits=0,
+                total_spent=0
+            )
+            session.add(new_client)
+            imported_count += 1
+        
+        await session.commit()
+    
+    # Build result message
+    result_parts = []
+    if imported_count > 0:
+        result_parts.append(f"✅ Импортировано: {imported_count}")
+    if skipped_count > 0:
+        result_parts.append(f"⏭️ Уже в базе: {skipped_count}")
+    
+    result_msg = "\n".join(result_parts) if result_parts else "Нечего импортировать"
+    
+    await message.answer(
+        f"📥 <b>Результат импорта:</b>\n\n{result_msg}\n\n"
+        "💡 Номера телефонов можно добавить вручную в разделе «Клиенты».",
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode="HTML"
+    )
+
+
 def register_handlers(dp):
     """Register onboarding handlers."""
     dp.include_router(router)

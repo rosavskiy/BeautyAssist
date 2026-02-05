@@ -72,6 +72,7 @@ def setup_routes(app: web.Application):
     app.router.add_post('/api/master/clients/delete-bulk', delete_clients_bulk)
     app.router.add_post('/api/master/book', master_book_appointment)
     app.router.add_get('/api/master/qr', get_master_qr_code)
+    app.router.add_post('/api/master/import-contacts/start', start_import_contacts)
     
     # Master API - Services
     app.router.add_get('/api/master/services', get_master_services)
@@ -2099,4 +2100,77 @@ async def delete_clients_bulk(request: web.Request):
             "ok": True,
             "deleted_count": deleted_count
         })
+
+
+async def start_import_contacts(request: web.Request):
+    """Start import contacts flow - send message to bot to show keyboard.
+    
+    Request body:
+        {
+            "mid": master_telegram_id
+        }
+    
+    This will send a message to the master in Telegram with a keyboard
+    button to select contacts for import.
+    """
+    from bot.handlers.onboarding import bot
+    from aiogram.types import KeyboardButtonRequestUsers
+    
+    payload = await request.json()
+    mid = payload.get("mid")
+    
+    if not mid:
+        return web.json_response({"error": "mid required"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        master = await mrepo.get_by_telegram_id(int(mid))
+        
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+    
+    if not bot:
+        return web.json_response({"error": "bot not initialized"}, status=500)
+    
+    try:
+        # Create keyboard with request_users button
+        from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+        
+        request_users_btn = KeyboardButton(
+            text="📥 Выбрать контакты из Telegram",
+            request_users=KeyboardButtonRequestUsers(
+                request_id=1,
+                user_is_bot=False,
+                max_quantity=10
+            )
+        )
+        
+        cancel_btn = KeyboardButton(text="❌ Отмена")
+        
+        keyboard = ReplyKeyboardMarkup(
+            keyboard=[[request_users_btn], [cancel_btn]],
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+        
+        await bot.send_message(
+            chat_id=int(mid),
+            text=(
+                "📥 <b>Импорт контактов из Telegram</b>\n\n"
+                "Нажмите кнопку ниже, чтобы выбрать контакты для импорта.\n"
+                "Вы можете выбрать до 10 контактов за раз.\n\n"
+                "⚠️ <i>Импортируются имя и username контакта.</i>"
+            ),
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+        
+        return web.json_response({
+            "ok": True,
+            "message": "Check Telegram for import keyboard"
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to start import: {e}", exc_info=True)
+        return web.json_response({"error": str(e)}, status=500)
 
