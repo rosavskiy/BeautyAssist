@@ -78,20 +78,19 @@ body {
 
 .header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
   color: #2D3142;
   letter-spacing: -0.5px;
-  flex: 1;
-  min-width: 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
 .header h1 .feather {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   stroke: #B8A7D6;
   stroke-width: 2.5;
   flex-shrink: 0;
@@ -420,6 +419,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .modal-content {
@@ -434,7 +434,6 @@ body {
   padding: 24px;
   animation: slideUp 0.3s ease;
   box-sizing: border-box;
-  margin: 0 auto;
 }
 
 @keyframes slideUp {
@@ -444,6 +443,14 @@ body {
 
 .modal-small {
   max-width: 400px;
+}
+
+/* Delete modal warning */
+.delete-warning {
+  color: #5C6478;
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 20px;
 }
 
 .modal-header {

@@ -1183,6 +1183,23 @@
         setTimeout(() => {
           alert(`✅ Клиент ${clientName} уведомлён о записи в Telegram!`);
         }, 500);
+      } else if (bookData.notification_method === 'telegram_inactive' && bookData.client_username) {
+        // Client has telegram_id but never started bot
+        setTimeout(() => {
+          const sendLink = confirm(
+            `⚠️ Клиент @${bookData.client_username} ещё не активировал бота.\n\n` +
+            `Чтобы получать уведомления, клиенту нужно написать боту.\n\n` +
+            `Отправить ему сообщение со ссылкой на бота?`
+          );
+          if (sendLink) {
+            window.open(`https://t.me/${bookData.client_username}`, '_blank');
+          }
+        }, 500);
+      } else if (bookData.notification_method === 'telegram_inactive') {
+        // Client has telegram_id but no username
+        setTimeout(() => {
+          alert(`⚠️ Клиент ещё не активировал бота.\n\nУведомление не отправлено.`);
+        }, 500);
       } else if (bookData.notification_method === 'username_only' && bookData.client_username) {
         setTimeout(() => {
           const sendLink = confirm(

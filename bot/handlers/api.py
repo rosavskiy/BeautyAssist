@@ -1909,7 +1909,7 @@ async def master_book_appointment(request: web.Request):
         notification_method = None
         
         if client.telegram_id:
-            # Client is in Telegram - send notification
+            # Client has telegram_id - try to send notification
             try:
                 from bot.handlers.onboarding import bot
                 from bot.config import settings
@@ -1944,11 +1944,17 @@ async def master_book_appointment(request: web.Request):
                     logger.info(f"Sent booking notification to client {client.id} via Telegram")
                     
             except Exception as e:
-                logger.warning(f"Failed to send notification to client: {e}")
+                error_msg = str(e).lower()
+                if "chat not found" in error_msg or "bot was blocked" in error_msg or "user is deactivated" in error_msg:
+                    # Client never started chat with bot or blocked it
+                    notification_method = "telegram_inactive"
+                    logger.info(f"Client {client.id} has telegram_id but hasn't started bot chat")
+                else:
+                    logger.warning(f"Failed to send notification to client: {e}")
+                    notification_method = "telegram_error"
         
         elif client.telegram_username:
             # Client has username but not telegram_id - we can't message them directly
-            # Return info to master so they can share the booking
             notification_method = "username_only"
             logger.info(f"Client {client.id} has username but no telegram_id, cannot notify directly")
         
