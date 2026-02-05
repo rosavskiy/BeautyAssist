@@ -991,8 +991,6 @@
       }
       
       slotsDiv.innerHTML = '';
-      const slotsGrid = document.createElement('div');
-      slotsGrid.className = 'slots-grid';
       
       slots.forEach(slot => {
         const btn = document.createElement('button');
@@ -1005,15 +1003,14 @@
         if (slot.available) {
           btn.addEventListener('click', () => {
             // Remove active from all
-            slotsGrid.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
+            slotsDiv.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             bookClient.selectedTime = timeLabel; // Store HH:MM for API
             bookClient.selectedStartISO = slot.start; // Store ISO if needed later
           });
         }
-        slotsGrid.appendChild(btn);
+        slotsDiv.appendChild(btn);
       });
-      slotsDiv.appendChild(slotsGrid);
     } catch (e) {
       console.error('Failed to load slots:', e);
       slotsDiv.innerHTML = '<p class="muted">Ошибка загрузки</p>';
