@@ -776,18 +776,15 @@ async def handle_users_shared(message: Message):
                 skipped_count += 1
                 continue
             
-            # Create new client (without phone for now - Telegram doesn't share it via users_shared)
+            # Create new client (without phone - Telegram doesn't share it via users_shared)
             from database.models.client import Client
-            
-            # Generate placeholder phone based on telegram_id
-            placeholder_phone = f"tg_{shared_user_id}"
             
             new_client = Client(
                 master_id=master.id,
                 telegram_id=shared_user_id,
                 telegram_username=username,
                 name=name,
-                phone=placeholder_phone,
+                phone=None,  # Phone will be added manually later
                 source="telegram_import",
                 total_visits=0,
                 total_spent=0

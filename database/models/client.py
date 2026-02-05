@@ -35,7 +35,7 @@ class Client(Base):
     
     # Personal info
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)  # Can be empty for Telegram imports
     
     # Additional info
     source: Mapped[str | None] = mapped_column(

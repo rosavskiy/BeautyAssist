@@ -131,7 +131,13 @@ function renderClients(clientsToRender) {
     listContainer.style.display = 'block';
     emptyState.style.display = 'none';
 
-    listContainer.innerHTML = clientsToRender.map(client => `
+    listContainer.innerHTML = clientsToRender.map(client => {
+        // Display phone or username if no phone
+        const contactInfo = client.phone 
+            ? escapeHtml(client.phone) 
+            : (client.username ? `@${escapeHtml(client.username)}` : '—');
+        
+        return `
         <div class="client-card ${selectedClients.has(client.id) ? 'selected' : ''}" data-id="${client.id}">
             ${selectMode ? `
                 <div class="client-checkbox">
@@ -143,9 +149,9 @@ function renderClients(clientsToRender) {
                 <div class="client-header">
                     <div>
                         <span class="client-name">${escapeHtml(client.name)}</span>
-                        ${client.username ? `<span class="client-username">@${escapeHtml(client.username)}</span>` : ''}
+                        ${client.username && client.phone ? `<span class="client-username">@${escapeHtml(client.username)}</span>` : ''}
                     </div>
-                    <div class="client-phone">${escapeHtml(client.phone)}</div>
+                    <div class="client-phone">${contactInfo}</div>
                 </div>
                 
                 <div class="client-stats">
@@ -160,7 +166,7 @@ function renderClients(clientsToRender) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
     
     // Re-init feather icons
     if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
@@ -175,8 +181,8 @@ function filterClients(searchTerm) {
 
     const term = searchTerm.toLowerCase();
     const filtered = clients.filter(client => {
-        const nameMatch = client.name.toLowerCase().includes(term);
-        const phoneMatch = client.phone.includes(term);
+        const nameMatch = client.name && client.name.toLowerCase().includes(term);
+        const phoneMatch = client.phone && client.phone.includes(term);
         const usernameMatch = client.username && client.username.toLowerCase().includes(term);
         return nameMatch || phoneMatch || usernameMatch;
     });
