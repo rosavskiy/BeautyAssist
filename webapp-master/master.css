@@ -138,6 +138,13 @@ svg * {
   box-shadow: 0 6px 24px rgba(184, 167, 214, 0.4);
 }
 
+.home-btn .feather {
+  width: 24px;
+  height: 24px;
+  stroke: #FFFFFF;
+  stroke-width: 2.5;
+}
+
 /* Finance page isolated styles */
 .fin-app { padding: 8px; }
 .fin-header { display:flex; flex-direction:column; gap:12px; }
@@ -521,6 +528,41 @@ h1 {
 
 .btn-primary:active {
   opacity: 0.9;
+}
+
+/* Form actions - buttons row */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.form-actions .btn {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.form-actions .btn-primary {
+  background: linear-gradient(135deg, #B8A7D6 0%, #A89CC9 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(184, 167, 214, 0.25);
+}
+
+.form-actions .btn-secondary {
+  background: #FFFFFF;
+  color: #2D3142;
+  border: 2px solid #E8ECF1;
+}
+
+.form-actions .btn-secondary:hover {
+  background: #F0EDF7;
+  border-color: #D4C9E8;
 }
 
 /* Mobile optimization for modal */

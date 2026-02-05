@@ -58,6 +58,8 @@
         console.error('Failed to load schedule for calendar:', e);
       }
     }
+    // Обновляем список выходных дат
+    cal.toggledOff = new Set((window.__master_schedule?.days_off_dates) || []);
     document.getElementById('calendar-section').classList.remove('hidden');
     renderCalendar();
   }
@@ -180,7 +182,7 @@
     if(id === 'open-hours') openHoursModal();
     if(id === 'open-qr-code') openQRCodeModal();
     if(id === 'qr-code-close') document.getElementById('qr-code-section').classList.add('hidden');
-    if(id === 'hours-close') document.getElementById('hours-section').classList.add('hidden');
+    if(id === 'hours-close' || id === 'hours-close-btn') document.getElementById('hours-section').classList.add('hidden');
     if(id === 'hours-save') saveHours();
     if(id === 'complete-confirm-close') document.getElementById('complete-confirm-section').classList.add('hidden');
     if(id === 'complete-no') handleCompleteNo();
@@ -258,7 +260,11 @@
     const el = document.getElementById('appointments');
     el.innerHTML = '';
     // Store schedule for calendar highlighting (с флагом _loaded)
-    if(data && data.work_schedule){ window.__master_schedule = Object.assign({}, data.work_schedule, {_loaded: true}); }
+    if(data && data.work_schedule){ 
+      window.__master_schedule = Object.assign({}, data.work_schedule, {_loaded: true}); 
+      // Сразу обновляем cal.toggledOff для календаря
+      cal.toggledOff = new Set((data.work_schedule.days_off_dates) || []);
+    }
     if(data && data.referral_code){ window.__master_referral_code = data.referral_code; }
     if(data && Array.isArray(data.appointments)){
       const apps = data.appointments;
