@@ -1080,18 +1080,56 @@
 
   // Save booking
   document.getElementById('book-client-save')?.addEventListener('click', async () => {
-    const phone = getFullPhone();
-    const name = document.getElementById('book-client-name').value.trim();
     const comment = document.getElementById('book-client-comment').value.trim();
     
-    if (!phone || phone.length < 8) {
-      alert('Введите номер телефона');
-      return;
+    // Check if client is preselected or entered manually
+    let clientId = null;
+    let clientName = '';
+    let isNewClient = false;
+    
+    if (bookClient.preselectedClientId) {
+      // Using preselected client
+      clientId = bookClient.preselectedClientId;
+      clientName = bookClient.preselectedClientName;
+    } else {
+      // Manual entry - validate
+      const phone = getFullPhone();
+      const name = document.getElementById('book-client-name').value.trim();
+      
+      if (!phone || phone.length < 8) {
+        alert('Введите номер телефона');
+        return;
+      }
+      if (!name) {
+        alert('Введите имя клиента');
+        return;
+      }
+      
+      // Create or get client
+      try {
+        const clientRes = await fetch('/api/master/client/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mid, phone, name })
+        });
+        
+        if (!clientRes.ok) {
+          const err = await clientRes.json();
+          alert('Ошибка: ' + (err.error || 'Не удалось создать клиента'));
+          return;
+        }
+        
+        const clientData = await clientRes.json();
+        clientId = clientData.client.id;
+        clientName = clientData.client.name;
+        isNewClient = clientData.is_new;
+      } catch (e) {
+        console.error('Create client error:', e);
+        alert('Ошибка: ' + e.message);
+        return;
+      }
     }
-    if (!name) {
-      alert('Введите имя клиента');
-      return;
-    }
+    
     if (!bookClient.selectedServiceId) {
       alert('Выберите услугу');
       return;
@@ -1106,23 +1144,7 @@
     }
     
     try {
-      // Step 1: Create or get client
-      const clientRes = await fetch('/api/master/client/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mid, phone, name })
-      });
-      
-      if (!clientRes.ok) {
-        const err = await clientRes.json();
-        alert('Ошибка: ' + (err.error || 'Не удалось создать клиента'));
-        return;
-      }
-      
-      const clientData = await clientRes.json();
-      const clientId = clientData.client.id;
-      
-      // Step 2: Create appointment
+      // Create appointment
       const bookRes = await fetch('/api/master/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1149,14 +1171,127 @@
       showSuccessTick();
       loadAppointments();
       
+      // Reset preselected client
+      bookClient.preselectedClientId = null;
+      bookClient.preselectedClientName = null;
+      bookClient.preselectedClientPhone = null;
+      document.getElementById('selected-client-info')?.classList.add('hidden');
+      document.getElementById('manual-client-fields').style.display = '';
+      
       // Show info
-      const isNew = clientData.is_new ? '(новый клиент)' : '';
-      console.log(`Записан ${clientData.client.name} ${isNew} на ${bookClient.selectedDate} ${bookClient.selectedTime}`);
+      const isNew = isNewClient ? '(новый клиент)' : '';
+      console.log(`Записан ${clientName} ${isNew} на ${bookClient.selectedDate} ${bookClient.selectedTime}`);
       
     } catch (e) {
       console.error('Booking error:', e);
       alert('Ошибка: ' + e.message);
     }
+  });
+
+  // ========== SELECT EXISTING CLIENT ==========
+  
+  let allClients = [];
+  let selectedClientId = null;
+  
+  // Open client select modal
+  document.getElementById('select-existing-client')?.addEventListener('click', async () => {
+    document.getElementById('select-client-modal').classList.remove('hidden');
+    document.getElementById('client-search-input').value = '';
+    
+    // Load clients
+    try {
+      const res = await fetch(`/api/master/clients?mid=${mid}`);
+      if (res.ok) {
+        allClients = await res.json();
+        renderClientList(allClients);
+      }
+    } catch (e) {
+      console.error('Failed to load clients:', e);
+    }
+    
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+  });
+  
+  // Close client select modal
+  document.getElementById('select-client-modal-close')?.addEventListener('click', () => {
+    document.getElementById('select-client-modal').classList.add('hidden');
+  });
+  
+  // Search clients
+  document.getElementById('client-search-input')?.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    if (!q) {
+      renderClientList(allClients);
+      return;
+    }
+    const filtered = allClients.filter(c => 
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.phone && c.phone.includes(q))
+    );
+    renderClientList(filtered);
+  });
+  
+  function renderClientList(clients) {
+    const container = document.getElementById('client-list-container');
+    if (!clients.length) {
+      container.innerHTML = '<div class="empty-hint">Клиенты не найдены</div>';
+      return;
+    }
+    
+    container.innerHTML = clients.map(c => `
+      <div class="client-list-item" data-id="${c.id}" data-name="${c.name || ''}" data-phone="${c.phone || ''}">
+        <div>
+          <div class="client-list-item-name">${c.name || 'Без имени'}</div>
+          <div class="client-list-item-phone">${c.phone || 'Нет телефона'}</div>
+        </div>
+        <i data-feather="chevron-right"></i>
+      </div>
+    `).join('');
+    
+    // Add click handlers
+    container.querySelectorAll('.client-list-item').forEach(item => {
+      item.addEventListener('click', () => {
+        selectClient(
+          item.dataset.id,
+          item.dataset.name,
+          item.dataset.phone
+        );
+      });
+    });
+    
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+  }
+  
+  function selectClient(id, name, phone) {
+    selectedClientId = parseInt(id);
+    
+    // Hide modal
+    document.getElementById('select-client-modal').classList.add('hidden');
+    
+    // Show selected client info
+    document.getElementById('selected-client-info').classList.remove('hidden');
+    document.getElementById('selected-client-name').textContent = `${name} (${phone})`;
+    
+    // Hide manual input fields
+    document.getElementById('manual-client-fields').style.display = 'none';
+    
+    // Store client data for booking
+    bookClient.preselectedClientId = parseInt(id);
+    bookClient.preselectedClientName = name;
+    bookClient.preselectedClientPhone = phone;
+  }
+  
+  // Clear selected client
+  document.getElementById('clear-selected-client')?.addEventListener('click', () => {
+    selectedClientId = null;
+    bookClient.preselectedClientId = null;
+    bookClient.preselectedClientName = null;
+    bookClient.preselectedClientPhone = null;
+    
+    document.getElementById('selected-client-info').classList.add('hidden');
+    document.getElementById('manual-client-fields').style.display = '';
+    
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
   });
 
   // ========== END OFFLINE CLIENT BOOKING ==========

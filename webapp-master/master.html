@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Кабинет мастера</title>
-  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-6" />
+  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-7" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -229,8 +229,19 @@
            <button id="book-client-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
          </div>
          <div class="modal-body">
-           <label>Телефон клиента *</label>
-           <div class="phone-input-row">
+           <!-- Выбор существующего клиента -->
+           <button id="select-existing-client" class="btn-secondary" style="width:100%; margin-bottom:16px; display:flex; align-items:center; justify-content:center; gap:8px;">
+             <i data-feather="users"></i> Выбрать из базы клиентов
+           </button>
+           
+           <div id="selected-client-info" class="selected-client-info hidden">
+             <span id="selected-client-name"></span>
+             <button id="clear-selected-client" class="icon-btn-small"><i data-feather="x"></i></button>
+           </div>
+           
+           <div id="manual-client-fields">
+             <label>Телефон клиента *</label>
+             <div class="phone-input-row">
              <select id="book-client-country" class="country-select">
                <option value="+7" selected>🇷🇺 +7</option>
                <option value="+380">🇺🇦 +380</option>
@@ -255,6 +266,7 @@
            
            <label>Имя клиента *</label>
            <input type="text" id="book-client-name" placeholder="Имя" />
+           </div>
            
            <label>Услуга *</label>
            <select id="book-client-service"></select>
@@ -301,9 +313,25 @@
          </div>
        </div>
      </section>
+     
+     <!-- Select Existing Client Modal -->
+     <section id="select-client-modal" class="modal hidden">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h2>Выберите клиента</h2>
+           <button id="select-client-modal-close" class="icon-btn" aria-label="Закрыть"><i data-feather="x"></i></button>
+         </div>
+         <div class="modal-body">
+           <input type="text" id="client-search-input" class="client-search-input" placeholder="Поиск по имени или телефону..." />
+           <div id="client-list-container" class="client-list-container">
+             <div class="empty-hint">Загрузка клиентов...</div>
+           </div>
+         </div>
+       </div>
+     </section>
 
   </div>
-  <script src="/webapp-master/master.js?v=20260205-9"></script>
+  <script src="/webapp-master/master.js?v=20260205-10"></script>
   <script>
     // Инициализация Feather Icons
     document.addEventListener('DOMContentLoaded', function() {
