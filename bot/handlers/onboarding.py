@@ -273,10 +273,26 @@ async def on_start(message: Message, command: CommandObject):
                 if not webapp_url:
                     return await message.answer("Ошибка конфигурации")
                 
+                # Check if this user is also a master
+                mrepo_self = MasterRepository(session)
+                self_master = await mrepo_self.get_by_telegram_id(message.from_user.id)
+                
                 inline_kb = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="📅 Записаться к мастеру", web_app=WebAppInfo(url=webapp_url))],
                     [InlineKeyboardButton(text="📋 Мои записи", web_app=WebAppInfo(url=appointments_url))]
                 ])
+                
+                if self_master and self_master.id != master.id:
+                    # This is another master visiting - show special message
+                    await message.answer(
+                        f"👋 Привет, коллега!\n\n"
+                        f"Это страница записи к мастеру <b>{master.name}</b>.\n"
+                        f"Вы можете записаться как клиент.\n\n"
+                        f"💡 Чтобы вернуться в свой кабинет, нажмите /menu",
+                        reply_markup=inline_kb,
+                        parse_mode="HTML"
+                    )
+                    return
                 
                 if existing_client:
                     # Client already linked - just show booking buttons
@@ -321,10 +337,14 @@ async def on_start(message: Message, command: CommandObject):
                         reply_markup=inline_kb
                     )
                 
-                # Remove menu commands for clients (clear bot commands)
+                # Remove menu commands for clients ONLY if they are NOT a master themselves
                 try:
-                    await bot.set_my_commands(commands=[], scope=BotCommandScopeChat(chat_id=message.chat.id))
-                    await bot.set_chat_menu_button(chat_id=message.chat.id, menu_button=MenuButtonDefault())
+                    mrepo_check = MasterRepository(session)
+                    is_also_master = await mrepo_check.get_by_telegram_id(message.from_user.id)
+                    if not is_also_master:
+                        # Only clear commands for pure clients
+                        await bot.set_my_commands(commands=[], scope=BotCommandScopeChat(chat_id=message.chat.id))
+                        await bot.set_chat_menu_button(chat_id=message.chat.id, menu_button=MenuButtonDefault())
                 except Exception:
                     pass
                 return
