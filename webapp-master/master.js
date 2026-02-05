@@ -51,6 +51,9 @@
         if (data && data.work_schedule) {
           window.__master_schedule = Object.assign({}, data.work_schedule, {_loaded: true});
         }
+        if (data && data.referral_code) {
+          window.__master_referral_code = data.referral_code;
+        }
       } catch (e) {
         console.error('Failed to load schedule for calendar:', e);
       }
@@ -254,6 +257,7 @@
     el.innerHTML = '';
     // Store schedule for calendar highlighting (с флагом _loaded)
     if(data && data.work_schedule){ window.__master_schedule = Object.assign({}, data.work_schedule, {_loaded: true}); }
+    if(data && data.referral_code){ window.__master_referral_code = data.referral_code; }
     if(data && Array.isArray(data.appointments)){
       const apps = data.appointments;
       if(!apps.length){ el.textContent = 'На сегодня записей нет'; return; }
@@ -972,7 +976,11 @@
     
     try {
       // API uses code (referral_code), service (service_id), date
-      const code = masterData.referral_code;
+      const code = window.__master_referral_code;
+      if (!code) {
+        slotsDiv.innerHTML = '<p class="muted">Код мастера не найден</p>';
+        return;
+      }
       const data = await api(`/api/slots?code=${encodeURIComponent(code)}&service=${bookClient.selectedServiceId}&date=${bookClient.selectedDate}`);
       // API returns array directly with {start, end, available}
       const slots = Array.isArray(data) ? data : [];
