@@ -11,7 +11,6 @@ from database.repositories.subscription import SubscriptionRepository
 from database.repositories.master import MasterRepository
 from bot.subscription_plans import get_plan_config
 from services.yookassa_service import yookassa_service
-from bot.keyboards.subscription import get_subscription_keyboard
 from bot.config import settings
 from database.models.subscription import SubscriptionPlan
 
