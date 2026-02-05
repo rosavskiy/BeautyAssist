@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Кабинет мастера</title>
-  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-10" />
+  <link rel="stylesheet" href="/webapp-master/master.css?v=20260205-11" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -274,7 +274,14 @@
            </div>
            
            <label>Услуга *</label>
-           <select id="book-client-service"></select>
+           <div class="custom-select" id="book-client-service-wrapper">
+             <div class="custom-select-trigger" id="book-client-service-trigger">
+               <span class="custom-select-value">— Выберите услугу —</span>
+               <i data-feather="chevron-down" class="custom-select-arrow"></i>
+             </div>
+             <div class="custom-select-options hidden" id="book-client-service-options"></div>
+             <input type="hidden" id="book-client-service" />
+           </div>
            
            <label>Дата *</label>
            <button id="book-client-date-btn" class="date-btn">Выберите дату</button>
@@ -336,7 +343,7 @@
      </section>
 
   </div>
-  <script src="/webapp-master/master.js?v=20260205-15"></script>
+  <script src="/webapp-master/master.js?v=20260205-16"></script>
   <script>
     // Инициализация Feather Icons
     document.addEventListener('DOMContentLoaded', function() {

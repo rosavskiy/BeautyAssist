@@ -217,7 +217,7 @@ function openServiceModal(serviceId = null) {
         document.getElementById('service-name').value = service.name;
         document.getElementById('service-duration').value = service.duration_minutes;
         document.getElementById('service-price').value = service.price;
-        document.getElementById('service-category').value = service.category || '';
+        setCustomSelectValue('service-category', service.category || '', service.category || 'Без категории');
         document.getElementById('service-description').value = service.description || '';
         document.getElementById('service-active').checked = service.is_active;
         document.querySelector('.char-counter').textContent = `${(service.description || '').length}/500`;
@@ -226,6 +226,7 @@ function openServiceModal(serviceId = null) {
         title.textContent = 'Добавить услугу';
         document.getElementById('service-id').value = '';
         document.getElementById('service-active').checked = true;
+        setCustomSelectValue('service-category', '', 'Без категории');
     }
     
     modal.style.display = 'flex';
@@ -423,3 +424,83 @@ function escapeHtml(text) {
     };
     return text.replace(/[&<>"']/g, m => map[m]);
 }
+
+// Custom Select Functions
+function setCustomSelectValue(id, value, displayText) {
+    const hiddenInput = document.getElementById(id);
+    const trigger = document.getElementById(id + '-trigger');
+    const options = document.getElementById(id + '-options');
+    
+    if (hiddenInput) hiddenInput.value = value;
+    
+    if (trigger) {
+        const valueSpan = trigger.querySelector('.custom-select-value');
+        if (valueSpan) {
+            valueSpan.textContent = displayText;
+            valueSpan.classList.toggle('placeholder', !value);
+        }
+    }
+    
+    if (options) {
+        options.querySelectorAll('.custom-select-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.value === value);
+        });
+    }
+}
+
+function initCustomSelect(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    const trigger = wrapper.querySelector('.custom-select-trigger');
+    const options = wrapper.querySelector('.custom-select-options');
+    const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+    
+    if (!trigger || !options) return;
+    
+    // Toggle dropdown
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = !options.classList.contains('hidden');
+        
+        // Close other dropdowns
+        document.querySelectorAll('.custom-select-options').forEach(o => o.classList.add('hidden'));
+        document.querySelectorAll('.custom-select-trigger').forEach(t => t.classList.remove('active'));
+        
+        if (!isOpen) {
+            options.classList.remove('hidden');
+            trigger.classList.add('active');
+        }
+    });
+    
+    // Option click
+    options.querySelectorAll('.custom-select-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const value = opt.dataset.value;
+            const text = opt.textContent;
+            
+            options.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            
+            const valueSpan = trigger.querySelector('.custom-select-value');
+            valueSpan.textContent = text;
+            valueSpan.classList.toggle('placeholder', !value);
+            
+            if (hiddenInput) hiddenInput.value = value;
+            
+            options.classList.add('hidden');
+            trigger.classList.remove('active');
+        });
+    });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select-options').forEach(o => o.classList.add('hidden'));
+    document.querySelectorAll('.custom-select-trigger').forEach(t => t.classList.remove('active'));
+});
+
+// Initialize custom selects on page load
+document.addEventListener('DOMContentLoaded', () => {
+    initCustomSelect('service-category-wrapper');
+});

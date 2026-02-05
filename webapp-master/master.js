@@ -906,16 +906,49 @@
       const servicesArr = Array.isArray(data) ? data : (data.services || []);
       bookClient.services = servicesArr.filter(s => s.is_active);
       
-      const select = document.getElementById('book-client-service');
-      select.innerHTML = '<option value="">— Выберите услугу —</option>';
+      // Populate custom select
+      const optionsContainer = document.getElementById('book-client-service-options');
+      const triggerValue = document.querySelector('#book-client-service-trigger .custom-select-value');
+      const hiddenInput = document.getElementById('book-client-service');
+      
+      optionsContainer.innerHTML = '';
+      
+      // Add placeholder option
+      const placeholderOpt = document.createElement('div');
+      placeholderOpt.className = 'custom-select-option disabled';
+      placeholderOpt.textContent = '— Выберите услугу —';
+      optionsContainer.appendChild(placeholderOpt);
+      
       bookClient.services.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        // API returns duration_minutes, not duration
+        const opt = document.createElement('div');
+        opt.className = 'custom-select-option';
+        opt.dataset.value = s.id;
         const dur = s.duration_minutes || s.duration || 0;
         opt.textContent = `${s.name} (${dur} мин, ${s.price}₽)`;
-        select.appendChild(opt);
+        opt.addEventListener('click', () => {
+          // Remove selected from others
+          optionsContainer.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          triggerValue.textContent = opt.textContent;
+          triggerValue.classList.remove('placeholder');
+          hiddenInput.value = s.id;
+          optionsContainer.classList.add('hidden');
+          document.getElementById('book-client-service-trigger').classList.remove('active');
+          
+          // Update booking state
+          bookClient.selectedServiceId = s.id;
+          if (bookClient.selectedDate && bookClient.selectedServiceId) {
+            loadBookingSlots();
+          }
+        });
+        optionsContainer.appendChild(opt);
       });
+      
+      // Reset trigger
+      triggerValue.textContent = '— Выберите услугу —';
+      triggerValue.classList.add('placeholder');
+      hiddenInput.value = '';
+      
     } catch (e) {
       console.error('Failed to load services:', e);
     }
@@ -925,18 +958,34 @@
     if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
   });
 
+  // Custom select trigger click
+  document.getElementById('book-client-service-trigger')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const trigger = e.currentTarget;
+    const options = document.getElementById('book-client-service-options');
+    const isOpen = !options.classList.contains('hidden');
+    
+    if (isOpen) {
+      options.classList.add('hidden');
+      trigger.classList.remove('active');
+    } else {
+      options.classList.remove('hidden');
+      trigger.classList.add('active');
+    }
+  });
+  
+  // Close custom select when clicking outside
+  document.addEventListener('click', (e) => {
+    const wrapper = document.getElementById('book-client-service-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      document.getElementById('book-client-service-options')?.classList.add('hidden');
+      document.getElementById('book-client-service-trigger')?.classList.remove('active');
+    }
+  });
+
   // Close book client modal
   document.getElementById('book-client-close')?.addEventListener('click', () => {
     document.getElementById('book-client-section').classList.add('hidden');
-  });
-
-  // Service change - update price display
-  document.getElementById('book-client-service')?.addEventListener('change', (e) => {
-    bookClient.selectedServiceId = e.target.value ? parseInt(e.target.value) : null;
-    // Reload slots if date already selected
-    if (bookClient.selectedDate && bookClient.selectedServiceId) {
-      loadBookingSlots();
-    }
   });
 
   // Open calendar for booking

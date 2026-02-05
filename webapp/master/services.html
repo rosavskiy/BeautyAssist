@@ -6,7 +6,7 @@
     <title>Каталог услуг - BeautyAssist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
-    <link rel="stylesheet" href="services.css?v=20260205-8">
+    <link rel="stylesheet" href="services.css?v=20260205-9">>
 </head>
 <body>
     <div class="container">
@@ -87,16 +87,23 @@
 
                     <div class="form-group">
                         <label for="service-category">Категория</label>
-                        <select id="service-category">
-                            <option value="">Без категории</option>
-                            <option value="Ногти">Ногти</option>
-                            <option value="Брови и ресницы">Брови и ресницы</option>
-                            <option value="Волосы">Волосы</option>
-                            <option value="Макияж">Макияж</option>
-                            <option value="Массаж">Массаж</option>
-                            <option value="Косметология">Косметология</option>
-                            <option value="Другое">Другое</option>
-                        </select>
+                        <div class="custom-select" id="service-category-wrapper">
+                          <div class="custom-select-trigger" id="service-category-trigger">
+                            <span class="custom-select-value placeholder">Без категории</span>
+                            <i data-feather="chevron-down" class="custom-select-arrow"></i>
+                          </div>
+                          <div class="custom-select-options hidden" id="service-category-options">
+                            <div class="custom-select-option selected" data-value="">Без категории</div>
+                            <div class="custom-select-option" data-value="Ногти">Ногти</div>
+                            <div class="custom-select-option" data-value="Брови и ресницы">Брови и ресницы</div>
+                            <div class="custom-select-option" data-value="Волосы">Волосы</div>
+                            <div class="custom-select-option" data-value="Макияж">Макияж</div>
+                            <div class="custom-select-option" data-value="Массаж">Массаж</div>
+                            <div class="custom-select-option" data-value="Косметология">Косметология</div>
+                            <div class="custom-select-option" data-value="Другое">Другое</div>
+                          </div>
+                          <input type="hidden" id="service-category" />
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -171,7 +178,7 @@
         </div>
     </div>
 
-    <script src="services.js?v=20260205-3"></script>
+    <script src="services.js?v=20260205-4"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
