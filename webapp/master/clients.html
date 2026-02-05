@@ -6,7 +6,7 @@
     <title>Клиенты - BeautyAssist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
-    <link rel="stylesheet" href="clients.css?v=20260205">
+    <link rel="stylesheet" href="clients.css?v=20260205-2">
 </head>
 <body>
     <div class="container">
@@ -14,7 +14,17 @@
         <header class="header">
             <a href="/webapp-master/master.html" class="home-btn"><i data-feather="home"></i></a>
             <h1><i data-feather="users"></i> Клиенты</h1>
+            <button id="toggle-select-mode" class="icon-btn" title="Выбор"><i data-feather="check-square"></i></button>
         </header>
+
+        <!-- Bulk Actions Bar (hidden by default) -->
+        <div id="bulk-actions" class="bulk-actions hidden">
+            <label class="select-all-label">
+                <input type="checkbox" id="select-all"> Выбрать всех
+            </label>
+            <span id="selected-count">0 выбрано</span>
+            <button id="delete-selected" class="btn-danger"><i data-feather="trash-2"></i> Удалить</button>
+        </div>
 
         <!-- Search -->
         <div class="search-box">
@@ -49,11 +59,54 @@
                     <button class="close-btn" onclick="closeClientHistory()"><i data-feather="x"></i></button>
                 </div>
 
-                <!-- Client Info -->
+                <!-- Client Info with Edit/Delete buttons -->
                 <div id="client-info" class="client-info-card"></div>
+                
+                <!-- Action Buttons -->
+                <div class="client-actions">
+                    <button id="edit-client-btn" class="btn-secondary"><i data-feather="edit-2"></i> Редактировать</button>
+                    <button id="delete-client-btn" class="btn-danger"><i data-feather="trash-2"></i> Удалить</button>
+                </div>
 
                 <!-- Appointments History -->
                 <div id="appointments-list" class="appointments-list"></div>
+            </div>
+        </div>
+
+        <!-- Edit Client Modal -->
+        <div id="edit-client-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Редактировать клиента</h2>
+                    <button class="close-btn" onclick="closeEditModal()"><i data-feather="x"></i></button>
+                </div>
+                <div class="form-group">
+                    <label>Имя</label>
+                    <input type="text" id="edit-client-name" placeholder="Имя клиента">
+                </div>
+                <div class="form-group">
+                    <label>Телефон</label>
+                    <input type="tel" id="edit-client-phone" placeholder="+7 999 123-45-67">
+                </div>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeEditModal()">Отмена</button>
+                    <button class="btn-primary" onclick="saveClient()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm Delete Modal -->
+        <div id="confirm-delete-modal" class="modal">
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h2>Удаление</h2>
+                    <button class="close-btn" onclick="closeConfirmDelete()"><i data-feather="x"></i></button>
+                </div>
+                <p id="confirm-delete-text">Вы уверены, что хотите удалить этого клиента?</p>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConfirmDelete()">Отмена</button>
+                    <button class="btn-danger" onclick="confirmDelete()">Удалить</button>
+                </div>
             </div>
         </div>
 
@@ -61,9 +114,14 @@
         <div id="error-toast" class="toast error-toast">
             <span id="error-message"></span>
         </div>
+        
+        <!-- Success Toast -->
+        <div id="success-toast" class="toast success-toast">
+            <span id="success-message"></span>
+        </div>
     </div>
 
-    <script src="clients.js?v=20260205"></script>
+    <script src="clients.js?v=20260205-2"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });

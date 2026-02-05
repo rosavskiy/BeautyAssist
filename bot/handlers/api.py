@@ -67,6 +67,9 @@ def setup_routes(app: web.Application):
     app.router.add_get('/api/master/clients', get_master_clients)
     app.router.add_get('/api/master/client/history', get_client_history)
     app.router.add_post('/api/master/client/create', create_offline_client)
+    app.router.add_post('/api/master/client/update', update_client)
+    app.router.add_post('/api/master/client/delete', delete_client)
+    app.router.add_post('/api/master/clients/delete-bulk', delete_clients_bulk)
     app.router.add_post('/api/master/book', master_book_appointment)
     app.router.add_get('/api/master/qr', get_master_qr_code)
     
@@ -1956,4 +1959,143 @@ async def get_master_qr_code(request: web.Request):
         except Exception as e:
             logger.error(f"Failed to generate QR code: {e}", exc_info=True)
             return web.json_response({"error": "Failed to generate QR code"}, status=500)
+
+
+async def update_client(request: web.Request):
+    """Update client information.
+    
+    Request body:
+        {
+            "mid": master_telegram_id,
+            "client_id": client_id,
+            "name": "New Name",
+            "phone": "+79991234567"
+        }
+    """
+    payload = await request.json()
+    mid = payload.get("mid")
+    client_id = payload.get("client_id")
+    name = payload.get("name", "").strip()
+    phone = payload.get("phone", "").strip()
+    
+    if not mid or not client_id:
+        return web.json_response({"error": "mid and client_id required"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        crepo = ClientRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        client = await crepo.get_by_id(int(client_id))
+        if not client or client.master_id != master.id:
+            return web.json_response({"error": "client not found"}, status=404)
+        
+        # Update fields
+        if name:
+            client.name = name
+        if phone:
+            client.phone = phone
+        
+        await crepo.update(client)
+        await session.commit()
+        
+        return web.json_response({
+            "ok": True,
+            "client": {
+                "id": client.id,
+                "name": client.name,
+                "phone": client.phone
+            }
+        })
+
+
+async def delete_client(request: web.Request):
+    """Delete a single client.
+    
+    Request body:
+        {
+            "mid": master_telegram_id,
+            "client_id": client_id
+        }
+    """
+    payload = await request.json()
+    mid = payload.get("mid")
+    client_id = payload.get("client_id")
+    
+    if not mid or not client_id:
+        return web.json_response({"error": "mid and client_id required"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        crepo = ClientRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        client = await crepo.get_by_id(int(client_id))
+        if not client or client.master_id != master.id:
+            return web.json_response({"error": "client not found"}, status=404)
+        
+        # Delete client (cascade will delete related data)
+        await session.delete(client)
+        await session.commit()
+        
+        logger.info(f"Deleted client {client_id} for master {master.id}")
+        
+        return web.json_response({"ok": True})
+
+
+async def delete_clients_bulk(request: web.Request):
+    """Delete multiple clients at once.
+    
+    Request body:
+        {
+            "mid": master_telegram_id,
+            "client_ids": [1, 2, 3]
+        }
+    """
+    payload = await request.json()
+    mid = payload.get("mid")
+    client_ids = payload.get("client_ids", [])
+    
+    if not mid or not client_ids:
+        return web.json_response({"error": "mid and client_ids required"}, status=400)
+    
+    async with async_session_maker() as session:
+        mrepo = MasterRepository(session)
+        
+        master = await mrepo.get_by_telegram_id(int(mid))
+        if not master:
+            return web.json_response({"error": "master not found"}, status=404)
+        
+        # Delete only clients belonging to this master
+        from database.models.client import Client
+        
+        result = await session.execute(
+            select(Client).where(
+                and_(
+                    Client.master_id == master.id,
+                    Client.id.in_([int(cid) for cid in client_ids])
+                )
+            )
+        )
+        clients_to_delete = result.scalars().all()
+        
+        deleted_count = 0
+        for client in clients_to_delete:
+            await session.delete(client)
+            deleted_count += 1
+        
+        await session.commit()
+        
+        logger.info(f"Bulk deleted {deleted_count} clients for master {master.id}")
+        
+        return web.json_response({
+            "ok": True,
+            "deleted_count": deleted_count
+        })
 

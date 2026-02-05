@@ -3,6 +3,10 @@ let tg = window.Telegram?.WebApp;
 let clients = [];
 let mid = null;
 let currentClientId = null;
+let currentClientData = null;
+let selectMode = false;
+let selectedClients = new Set();
+let deleteTarget = null; // 'single' or 'bulk'
 
 // Get master ID from URL params
 function getMasterId() {
@@ -128,27 +132,38 @@ function renderClients(clientsToRender) {
     emptyState.style.display = 'none';
 
     listContainer.innerHTML = clientsToRender.map(client => `
-        <div class="client-card" onclick="openClientHistory(${client.id})">
-            <div class="client-header">
-                <div>
-                    <span class="client-name">${escapeHtml(client.name)}</span>
-                    ${client.username ? `<span class="client-username">@${escapeHtml(client.username)}</span>` : ''}
+        <div class="client-card ${selectedClients.has(client.id) ? 'selected' : ''}" data-id="${client.id}">
+            ${selectMode ? `
+                <div class="client-checkbox">
+                    <input type="checkbox" ${selectedClients.has(client.id) ? 'checked' : ''} 
+                           onchange="toggleClientSelect(${client.id}, this.checked)">
                 </div>
-                <div class="client-phone">${escapeHtml(client.phone)}</div>
-            </div>
-            
-            <div class="client-stats">
-                <div class="stat-item">
-                    <span>📊 Визитов:</span>
-                    <span class="stat-value">${client.total_visits || 0}</span>
+            ` : ''}
+            <div class="client-content" onclick="${selectMode ? `toggleClientSelect(${client.id})` : `openClientHistory(${client.id})`}">
+                <div class="client-header">
+                    <div>
+                        <span class="client-name">${escapeHtml(client.name)}</span>
+                        ${client.username ? `<span class="client-username">@${escapeHtml(client.username)}</span>` : ''}
+                    </div>
+                    <div class="client-phone">${escapeHtml(client.phone)}</div>
                 </div>
-                <div class="stat-item">
-                    <span>💰 Потрачено:</span>
-                    <span class="stat-value">${client.total_spent || 0} ₽</span>
+                
+                <div class="client-stats">
+                    <div class="stat-item">
+                        <span>📊 Визитов:</span>
+                        <span class="stat-value">${client.total_visits || 0}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>💰 Потрачено:</span>
+                        <span class="stat-value">${client.total_spent || 0} ₽</span>
+                    </div>
                 </div>
             </div>
         </div>
     `).join('');
+    
+    // Re-init feather icons
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
 }
 
 // Filter Clients
@@ -172,6 +187,7 @@ function filterClients(searchTerm) {
 // Open Client History
 async function openClientHistory(clientId) {
     currentClientId = clientId;
+    currentClientData = null;
     
     try {
         if (!mid) {
@@ -191,6 +207,7 @@ async function openClientHistory(clientId) {
         }
 
         const client = data.client;
+        currentClientData = client; // Save for editing
         const appointments = data.appointments || [];
 
         // Update modal title
@@ -294,4 +311,236 @@ document.addEventListener('click', (e) => {
     if (e.target.id === 'client-history-modal') {
         closeClientHistory();
     }
+    if (e.target.id === 'edit-client-modal') {
+        closeEditModal();
+    }
+    if (e.target.id === 'confirm-delete-modal') {
+        closeConfirmDelete();
+    }
+});
+
+// ========== SELECT MODE ==========
+
+function toggleSelectMode() {
+    selectMode = !selectMode;
+    selectedClients.clear();
+    
+    const bulkActions = document.getElementById('bulk-actions');
+    const toggleBtn = document.getElementById('toggle-select-mode');
+    
+    if (selectMode) {
+        bulkActions.classList.remove('hidden');
+        toggleBtn.classList.add('active');
+    } else {
+        bulkActions.classList.add('hidden');
+        toggleBtn.classList.remove('active');
+    }
+    
+    updateSelectedCount();
+    renderClients(clients);
+}
+
+function toggleClientSelect(clientId, checked) {
+    if (checked === undefined) {
+        // Toggle
+        if (selectedClients.has(clientId)) {
+            selectedClients.delete(clientId);
+        } else {
+            selectedClients.add(clientId);
+        }
+    } else {
+        // Set explicitly
+        if (checked) {
+            selectedClients.add(clientId);
+        } else {
+            selectedClients.delete(clientId);
+        }
+    }
+    
+    updateSelectedCount();
+    renderClients(clients);
+}
+
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    if (selectAllCheckbox.checked) {
+        clients.forEach(c => selectedClients.add(c.id));
+    } else {
+        selectedClients.clear();
+    }
+    updateSelectedCount();
+    renderClients(clients);
+}
+
+function updateSelectedCount() {
+    document.getElementById('selected-count').textContent = `${selectedClients.size} выбрано`;
+    document.getElementById('select-all').checked = selectedClients.size === clients.length && clients.length > 0;
+}
+
+// ========== EDIT CLIENT ==========
+
+function openEditModal() {
+    if (!currentClientData) return;
+    
+    document.getElementById('edit-client-name').value = currentClientData.name || '';
+    document.getElementById('edit-client-phone').value = currentClientData.phone || '';
+    document.getElementById('edit-client-modal').style.display = 'flex';
+    
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+}
+
+function closeEditModal() {
+    document.getElementById('edit-client-modal').style.display = 'none';
+}
+
+async function saveClient() {
+    if (!currentClientId || !mid) return;
+    
+    const name = document.getElementById('edit-client-name').value.trim();
+    const phone = document.getElementById('edit-client-phone').value.trim();
+    
+    if (!name) {
+        showError('Введите имя клиента');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/master/client/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mid, client_id: currentClientId, name, phone })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Ошибка сохранения');
+        }
+        
+        closeEditModal();
+        closeClientHistory();
+        showSuccess('Клиент обновлён');
+        loadClients();
+        
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+// ========== DELETE CLIENT ==========
+
+function openDeleteConfirm(type) {
+    deleteTarget = type;
+    const textEl = document.getElementById('confirm-delete-text');
+    
+    if (type === 'single') {
+        textEl.textContent = 'Вы уверены, что хотите удалить этого клиента? Все его записи также будут удалены.';
+    } else {
+        textEl.textContent = `Удалить ${selectedClients.size} клиентов? Все их записи также будут удалены.`;
+    }
+    
+    document.getElementById('confirm-delete-modal').style.display = 'flex';
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
+}
+
+function closeConfirmDelete() {
+    document.getElementById('confirm-delete-modal').style.display = 'none';
+    deleteTarget = null;
+}
+
+async function confirmDelete() {
+    if (deleteTarget === 'single') {
+        await deleteSingleClient();
+    } else {
+        await deleteBulkClients();
+    }
+    closeConfirmDelete();
+}
+
+async function deleteSingleClient() {
+    if (!currentClientId || !mid) return;
+    
+    try {
+        const response = await fetch('/api/master/client/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mid, client_id: currentClientId })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Ошибка удаления');
+        }
+        
+        closeClientHistory();
+        showSuccess('Клиент удалён');
+        loadClients();
+        
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+async function deleteBulkClients() {
+    if (selectedClients.size === 0 || !mid) return;
+    
+    try {
+        const response = await fetch('/api/master/clients/delete-bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mid, client_ids: Array.from(selectedClients) })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Ошибка удаления');
+        }
+        
+        const data = await response.json();
+        showSuccess(`Удалено клиентов: ${data.deleted_count}`);
+        selectedClients.clear();
+        updateSelectedCount();
+        loadClients();
+        
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+// ========== SUCCESS TOAST ==========
+
+function showSuccess(message) {
+    const toast = document.getElementById('success-toast');
+    const messageEl = document.getElementById('success-message');
+    
+    messageEl.textContent = message;
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+// ========== INIT EVENT LISTENERS ==========
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Toggle select mode button
+    document.getElementById('toggle-select-mode')?.addEventListener('click', toggleSelectMode);
+    
+    // Select all checkbox
+    document.getElementById('select-all')?.addEventListener('change', toggleSelectAll);
+    
+    // Delete selected button
+    document.getElementById('delete-selected')?.addEventListener('click', () => {
+        if (selectedClients.size > 0) {
+            openDeleteConfirm('bulk');
+        }
+    });
+    
+    // Edit client button (in history modal)
+    document.getElementById('edit-client-btn')?.addEventListener('click', openEditModal);
+    
+    // Delete client button (in history modal)
+    document.getElementById('delete-client-btn')?.addEventListener('click', () => {
+        openDeleteConfirm('single');
+    });
 });

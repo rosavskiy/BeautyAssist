@@ -448,9 +448,30 @@
     document.getElementById('settings-section').classList.add('hidden');
     const modal = document.getElementById('qr-code-section');
     const img = document.getElementById('qr-code-img');
+    const container = document.getElementById('qr-code-container');
     
-    // Set QR code image source
-    img.src = `/api/master/qr?mid=${encodeURIComponent(mid)}&t=${Date.now()}`;
+    if (!mid) {
+      container.innerHTML = '<p class="muted">Ошибка: ID мастера не определён</p>';
+      modal.classList.remove('hidden');
+      return;
+    }
+    
+    // Set QR code image source with error handling
+    img.style.display = 'none';
+    container.innerHTML = '<p class="muted">Загрузка QR-кода...</p>';
+    
+    const newImg = new Image();
+    newImg.onload = function() {
+      container.innerHTML = '';
+      container.appendChild(newImg);
+      newImg.style.maxWidth = '200px';
+      newImg.style.height = 'auto';
+      newImg.alt = 'QR Code';
+    };
+    newImg.onerror = function() {
+      container.innerHTML = '<p class="muted">Не удалось загрузить QR-код.<br>Используйте команду /qr в боте.</p>';
+    };
+    newImg.src = `/api/master/qr?mid=${encodeURIComponent(mid)}&t=${Date.now()}`;
     
     modal.classList.remove('hidden');
     if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2.5 });
@@ -1031,27 +1052,39 @@
     }
   }
 
-  // Phone input formatting
+  // Phone input formatting - now supports multiple country codes
   document.getElementById('book-client-phone')?.addEventListener('input', (e) => {
+    const countrySelect = document.getElementById('book-client-country');
+    const countryCode = countrySelect?.value || '+7';
     let val = e.target.value.replace(/\D/g, '');
-    if (val.startsWith('8')) val = '7' + val.slice(1);
-    if (val.startsWith('7')) {
-      let formatted = '+7';
-      if (val.length > 1) formatted += ' (' + val.slice(1, 4);
-      if (val.length > 4) formatted += ') ' + val.slice(4, 7);
-      if (val.length > 7) formatted += '-' + val.slice(7, 9);
-      if (val.length > 9) formatted += '-' + val.slice(9, 11);
+    
+    // Simple formatting: just add spaces for readability
+    if (val.length > 0) {
+      let formatted = '';
+      if (val.length <= 3) formatted = val;
+      else if (val.length <= 6) formatted = val.slice(0, 3) + ' ' + val.slice(3);
+      else if (val.length <= 8) formatted = val.slice(0, 3) + ' ' + val.slice(3, 6) + '-' + val.slice(6);
+      else formatted = val.slice(0, 3) + ' ' + val.slice(3, 6) + '-' + val.slice(6, 8) + '-' + val.slice(8, 10);
       e.target.value = formatted;
     }
   });
+  
+  // Get full phone number with country code
+  function getFullPhone() {
+    const countrySelect = document.getElementById('book-client-country');
+    const phoneInput = document.getElementById('book-client-phone');
+    const countryCode = countrySelect?.value || '';
+    const phone = phoneInput?.value.replace(/\D/g, '') || '';
+    return countryCode + phone;
+  }
 
   // Save booking
   document.getElementById('book-client-save')?.addEventListener('click', async () => {
-    const phone = document.getElementById('book-client-phone').value.trim();
+    const phone = getFullPhone();
     const name = document.getElementById('book-client-name').value.trim();
     const comment = document.getElementById('book-client-comment').value.trim();
     
-    if (!phone || phone.length < 12) {
+    if (!phone || phone.length < 8) {
       alert('Введите номер телефона');
       return;
     }

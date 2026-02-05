@@ -1364,6 +1364,37 @@ h1 {
   background: #D4D9E3;
 }
 
+/* Phone input with country code */
+.phone-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.country-select {
+  width: 110px;
+  flex-shrink: 0;
+  padding: 12px 8px;
+  border: 2px solid #E8ECF1;
+  border-radius: 12px;
+  font-size: 14px;
+  background: #FAFBFC;
+  color: #2D3142;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.country-select:focus {
+  outline: none;
+  border-color: #B8A7D6;
+  background: #FFFFFF;
+}
+
+.phone-input-row input[type="tel"] {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Date button for booking modal */
 .date-btn {
   width: 100%;
